@@ -1,0 +1,26 @@
+{
+  "mappings": {
+    "rra": {
+      "properties": {
+        "agent_id": {
+          "type": "text"
+        },
+        "agent_kind": {
+          "type": "text"
+        },
+        "message_level": {
+          "type": "text"
+        },
+        "message": {
+          "type": "text"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "timestamp_from_agent": {
+          "type": "date"
+        }
+      }
+    }
+  }
+}

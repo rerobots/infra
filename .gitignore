@@ -1,0 +1,10 @@
+*~
+.DS_Store
+
+*.pyc
+__pycache__
+*.egg-info
+_version.py
+dist/
+db.sqlite3
+_version.py
