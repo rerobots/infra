@@ -8,3 +8,8 @@ _version.py
 dist/
 db.sqlite3
 _version.py
+
+rerobots_apiw*.log
+/apiw/etc/*.key
+/apiw/etc/*.dsn
+/apiw/etc/slack-webhooks

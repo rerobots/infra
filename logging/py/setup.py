@@ -20,9 +20,9 @@ def get_githash():
     return hashstr
 
 
-with open(os.path.join('..', 'VERSION'), 'rt') as fp:
+with open(os.path.join('..', '..', 'VERSION'), 'rt') as fp:
     VERSION = fp.read()
-if not os.path.exists(os.path.join('..', 'RELEASE')):
+if not os.path.exists(os.path.join('..', '..', 'RELEASE')):
     VERSION += '.dev0'
     HASHSTR = get_githash()
     if HASHSTR:
