@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+rerobots-apiw = {editable = true, path = "."}
+
+[dev-packages]
+pytest = "*"
+pytest-aiohttp = "*"
+pyflakes = "*"
+rerobots-apiw = {editable = true, path = "."}
+ruff = "*"
+
+[requires]
+python_version = "3.10"
