@@ -1,0 +1,213 @@
+{
+  "bindings": [],
+  "exchanges": [
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.match",
+      "type": "headers",
+      "vhost": "/"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.headers",
+      "type": "headers",
+      "vhost": "webui"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.topic",
+      "type": "topic",
+      "vhost": "webui"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "",
+      "type": "direct",
+      "vhost": "core"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.direct",
+      "type": "direct",
+      "vhost": "core"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.direct",
+      "type": "direct",
+      "vhost": "webui"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "",
+      "type": "direct",
+      "vhost": "webui"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.match",
+      "type": "headers",
+      "vhost": "core"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.direct",
+      "type": "direct",
+      "vhost": "/"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.headers",
+      "type": "headers",
+      "vhost": "/"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.fanout",
+      "type": "fanout",
+      "vhost": "core"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.topic",
+      "type": "topic",
+      "vhost": "/"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.headers",
+      "type": "headers",
+      "vhost": "core"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.match",
+      "type": "headers",
+      "vhost": "webui"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.fanout",
+      "type": "fanout",
+      "vhost": "webui"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.fanout",
+      "type": "fanout",
+      "vhost": "/"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "amq.topic",
+      "type": "topic",
+      "vhost": "core"
+    },
+    {
+      "arguments": [],
+      "auto_delete": false,
+      "durable": true,
+      "name": "",
+      "type": "direct",
+      "vhost": "/"
+    }
+  ],
+  "global_parameters": [],
+  "parameters": [],
+  "permissions": [
+    {
+      "configure": ".*",
+      "read": ".*",
+      "user": "guest",
+      "vhost": "/",
+      "write": ".*"
+    },
+    {
+      "configure": ".*",
+      "read": ".*",
+      "user": "guest",
+      "vhost": "webui",
+      "write": ".*"
+    },
+    {
+      "configure": ".*",
+      "read": ".*",
+      "user": "guest",
+      "vhost": "core",
+      "write": ".*"
+    }
+  ],
+  "policies": [],
+  "queues": [],
+  "rabbit_version": "3.8.2",
+  "rabbitmq_version": "3.8.2",
+  "topic_permissions": [],
+  "users": [
+    {
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "name": "guest",
+      "password_hash": "7d5/Qg1dHyClb5oVvYuvBGSWpEAI5ZDeZnsrj4PMyB9gRpbY",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "limits": [],
+      "metadata": {
+        "description": "",
+        "tags": []
+      },
+      "name": "core"
+    },
+    {
+      "limits": [],
+      "metadata": {
+        "description": "Default virtual host",
+        "tags": []
+      },
+      "name": "/"
+    },
+    {
+      "limits": [],
+      "metadata": {
+        "description": "",
+        "tags": []
+      },
+      "name": "webui"
+    }
+  ]
+}
