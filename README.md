@@ -16,7 +16,7 @@ Prepare for running locally
 ---------------------------
 
 * PostgreSQL (https://www.postgresql.org/) development files, to build Psycopg (https://www.psycopg.org/)
-* Install pipenv (https://pipenv.pypa.io/en/latest/installation/)
+* Install pipenv (https://pipenv.pypa.io/en/stable/installation.html)
 * `pipenv install -d` in each component directory, including web/
 * Install pnpm (https://pnpm.io/installation)
 * `pnpm install` in the directory web/client/
