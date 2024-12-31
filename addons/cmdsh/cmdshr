@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""
+SCL <scott@rerobots>
+Copyright (C) 2020 rerobots, Inc.
+"""
+import asyncio
+import json
+import os
+import pty
+import sys
+import time
+
+try:
+    from asyncio import get_running_loop
+except ImportError:
+    from asyncio import get_event_loop as get_running_loop
+
+import aiohttp
+
+
+def shell_reader(fd, send, loop):
+    try:
+        buf = os.read(fd, 1024)
+    except Exception as err:
+        # TODO: log
+        loop.remove_reader(fd)
+        return
+    if len(buf) == 0:
+        loop.remove_reader(fd)
+        return
+    loop.create_task(send(buf))
+
+
+def shell_writer(fd, buf, loop):
+    if isinstance(buf, str):
+        buf = bytes(buf, encoding='utf-8')
+    try:
+        os.write(fd, buf)
+    finally:
+        loop.remove_writer(fd)
+
+
+async def sh(instance_id, host_id, sh_id, tok, base_uri='https://api.rerobots.net', verify_certs=True):
+    headers = {'Authorization': 'Bearer {}'.format(tok)}
+    uri = base_uri + '/addon/cmdsh/{}/{}/rx/{}'.format(instance_id, host_id, sh_id)
+    loop = get_running_loop()
+    if verify_certs:
+        session = aiohttp.ClientSession(headers=headers)
+    else:
+        conn = aiohttp.TCPConnector(ssl=False)
+        session = aiohttp.ClientSession(connector=conn, headers=headers)
+    m_fd, s_fd = pty.openpty()
+    cp = await asyncio.create_subprocess_exec('python3', 'cmdshr', stdin=s_fd, stdout=s_fd, stderr=s_fd, env={
+        'TERM': 'xterm-256color',
+        'LC_ALL': 'C.UTF-8',
+        'LANG': 'C.UTF-8',
+    })
+    loop = get_running_loop()
+    # TODO: attempt to re-connect if lost
+    async with session.ws_connect(uri, timeout=30.0, autoping=True) as ws:
+        loop.add_reader(m_fd, shell_reader, m_fd, ws.send_bytes, loop)
+        try:
+            async for msg in ws:
+                if msg.type == aiohttp.WSMsgType.CLOSED or msg.type == aiohttp.WSMsgType.ERROR:
+                    break
+                loop.add_writer(m_fd, shell_writer, m_fd, msg.data, loop)
+        except Exception as err:
+            # TODO: log
+            pass
+        finally:
+            loop.remove_reader(m_fd)
+            loop.remove_writer(m_fd)
+            try:
+                cp.kill()
+                await cp.wait()
+            except ProcessLookupError:
+                pass
+            # TODO: close m_fd, s_fd ?
+
+
+async def main(instance_id, host_id, tok, base_uri='https://api.rerobots.net', verify_certs=True):
+    headers = {'Authorization': 'Bearer {}'.format(tok)}
+    loop = get_running_loop()
+    uri = base_uri + '/addon/cmdsh/{}/{}/rx'.format(instance_id, host_id)
+    active = True
+    tasks = dict()
+    while active:
+        if verify_certs:
+            session = aiohttp.ClientSession(headers=headers)
+        else:
+            conn = aiohttp.TCPConnector(ssl=False)
+            session = aiohttp.ClientSession(connector=conn, headers=headers)
+        try:
+            async with session.ws_connect(uri, timeout=30.0, autoping=True) as ws:
+                async for msg in ws:
+                    if msg.type == aiohttp.WSMsgType.CLOSED:
+                        break
+                    elif msg.type == aiohttp.WSMsgType.ERROR:
+                        break
+                    else:
+                        payload = json.loads(msg.data)
+                        if payload['cmd'] == 'new':
+                            tasks[payload['sid']] = loop.create_task(sh(instance_id, host_id, payload['sid'], tok, base_uri=base_uri, verify_certs=verify_certs))
+                        else:
+                            # TODO: report error
+                            pass
+
+        except asyncio.CancelledError:
+            active = False
+
+        except Exception as err:
+            # TODO: logger.error('caught {}: {}'.format(type(err), err))
+            pass
+
+        finally:
+            await session.close()
+
+
+if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        sys.exit(pty.spawn(['/bin/sh']))
+    if len(sys.argv) < 4 or len(sys.argv) > 6:
+        print('Usage: cmdshr INSTANCEID HOSTID FILE [BASEURI [VERIFY]]')
+        sys.exit(1)
+    instance_id = sys.argv[1]
+    host_id = sys.argv[2]
+    with open(sys.argv[3], 'rt') as fp:
+        tok = fp.read().strip()
+    if os.fork() != 0:
+        sys.exit()
+    os.close(0)
+    os.close(1)
+    os.close(2)
+    loop = asyncio.get_event_loop()
+    if len(sys.argv) >= 5:
+        base_uri = sys.argv[4]
+    else:
+        base_uri = 'https://api.rerobots.net'
+    if len(sys.argv) >= 6:
+        verify_certs = bool(int(sys.argv[5]))
+    else:
+        verify_certs = True
+    while True:
+        loop.run_until_complete(main(instance_id, host_id, tok, base_uri=base_uri, verify_certs=verify_certs))
+        time.sleep(1)
