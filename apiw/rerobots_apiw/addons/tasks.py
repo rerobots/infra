@@ -43,7 +43,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
                 .one()
             )
             instance_status = instance.status
-            if instance_status in ['TERMINATING', 'TERMINATED']:
+            if instance_status in ['INIT_FAIL', 'TERMINATING', 'TERMINATED']:
                 logger.warning('instance is not in feasible status')
                 return
 
