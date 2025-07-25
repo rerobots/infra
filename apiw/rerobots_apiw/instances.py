@@ -533,6 +533,11 @@ async def request_instance(request):
         feasible_wds = []
         wtype = None
         for row in wds_query:
+            if row.locked_out:
+                error_msg = 'workspace deployment is locked out (unavailable), please contact us '
+                error_code = 400
+                continue
+
             if (
                 row.last_heartbeat is None
                 or datetime.utcnow().timestamp() - row.last_heartbeat.timestamp() > 60.0
@@ -541,11 +546,6 @@ async def request_instance(request):
                     'workspace deployment temporarily unavailable, try again later'
                 )
                 error_code = 503
-                continue
-
-            if row.locked_out:
-                error_msg = 'workspace deployment is locked out (unavailable), please contact us '
-                error_code = 400
                 continue
 
             if not accept_instantiate(
