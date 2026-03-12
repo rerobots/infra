@@ -4,7 +4,7 @@
 # SCL <scott@rerobots>
 # Copyright (C) 2022 rerobots, Inc.
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get -y install \

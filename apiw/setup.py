@@ -48,14 +48,14 @@ setup(
     install_requires=[
         'aiocache[redis]>=0.11,<0.12',
         'aiocontextvars',
-        'aiohttp>=3.8,<3.9',
+        'aiohttp>=3.12,<3.13',
         'aioredis<2',  # version 2 in production throws exception: AttributeError: module 'aioredis' has no attribute 'create_pool'
         'celery',
         'cryptography',
         'geoip2',
         'gunicorn>=20.1,<20.2',
         'pika==1.2',
-        'psycopg2',
+        'psycopg[binary]',
         'pyjwt<2',
         'redis',
         'requests>=2.32,<2.33',
