@@ -18,6 +18,23 @@ except ImportError:
 import aiohttp
 
 
+ALLOW_ENV_LIST = [
+    'REROBOTS_INSTANCE',
+]
+
+
+def gen_env():
+    env = {
+        'TERM': 'xterm-256color',
+        'LC_ALL': 'C.UTF-8',
+        'LANG': 'C.UTF-8',
+    }
+    for k in ALLOW_ENV_LIST:
+        if k in os.environ:
+            env[k] = os.environ[k]
+    return env
+
+
 def shell_reader(fd, send, loop):
     try:
         buf = os.read(fd, 1024)
@@ -50,11 +67,7 @@ async def sh(instance_id, host_id, sh_id, tok, base_uri='https://api.rerobots.ne
         conn = aiohttp.TCPConnector(ssl=False)
         session = aiohttp.ClientSession(connector=conn, headers=headers)
     m_fd, s_fd = pty.openpty()
-    cp = await asyncio.create_subprocess_exec('python3', 'cmdshr', stdin=s_fd, stdout=s_fd, stderr=s_fd, env={
-        'TERM': 'xterm-256color',
-        'LC_ALL': 'C.UTF-8',
-        'LANG': 'C.UTF-8',
-    })
+    cp = await asyncio.create_subprocess_exec('python3', 'cmdshr', stdin=s_fd, stdout=s_fd, stderr=s_fd, env=gen_env())
     loop = get_running_loop()
     # TODO: attempt to re-connect if lost
     async with session.ws_connect(uri, timeout=30.0, autoping=True) as ws:
