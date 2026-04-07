@@ -28,10 +28,23 @@ MAIN_INGRESS = 'proxyingress'
 
 
 @capp.task
+def start_rpc(user, instance_id):
+    start_rpc.delay(user, instance_id, ptype='rpc')
+
+
+@capp.task
 def start_mistyproxy(user, instance_id):
+    start_httpproxy.delay(user, instance_id, ptype='mistyproxy')
+
+
+@capp.task
+def start_httpproxy(user, instance_id, ptype=None):
     # TODO:
     # The main challenge is to be aware if another request (via this
     # APIW or another) arrives to DELETE while status=`starting`
+    if ptype is None:
+        ptype = 'httpp' # httpproxy
+
     while True:
         logger.debug('checking instance status...')
         with rrdb.create_session_context() as session:
@@ -40,7 +53,7 @@ def start_mistyproxy(user, instance_id):
                 .filter(
                     rrdb.ActiveAddon.user == user,
                     rrdb.ActiveAddon.instanceid_with_addon
-                    == f'{instance_id}:mistyproxy',
+                    == f'{instance_id}:{ptype}',
                 )
                 .one_or_none()
             )
@@ -74,7 +87,7 @@ def start_mistyproxy(user, instance_id):
             break
         time.sleep(1)
 
-    pid = f'{instance_id}__mistyproxy'
+    pid = f'{instance_id}__{ptype}'
     ihash = hashlib.sha256(bytes(instance_id, encoding='utf-8')).hexdigest()
 
     if settings.RUNTIME_ENVIRON in ['mock', 'staging-mock']:
@@ -84,7 +97,7 @@ def start_mistyproxy(user, instance_id):
                 .filter(
                     rrdb.ActiveAddon.user == user,
                     rrdb.ActiveAddon.instanceid_with_addon
-                    == f'{instance_id}:mistyproxy',
+                    == f'{instance_id}:{ptype}',
                 )
                 .one()
             )
@@ -92,26 +105,27 @@ def start_mistyproxy(user, instance_id):
             addon_config['status'] = 'active'
             addon_config['url'] = [
                 'api.staging.rerobots.net:666/faketoken',
-                f'{settings.ORIGIN}/proxy/{ihash}/mistyproxy/{ptoken}',
+                f'{settings.ORIGIN}/proxy/{ihash}/{ptype}/{ptoken}',
             ]
             addon_config['fwdport'] = 666
             activeaddon.config = json.dumps(addon_config)
         return
 
     targetipaddr = None
-    with rrdb.create_session_context() as session:
-        wdeployment = (
-            session.query(rrdb.Deployment)
-            .filter(rrdb.Deployment.deploymentid == wdeployment_id)
-            .one()
-        )
-        try:
-            addons_config = json.loads(wdeployment.addons_config)
-            if 'mistyproxy' in addons_config:
-                targetipaddr = addons_config['mistyproxy']['ip']
-        except Exception as err:
-            logger.error(f'error parsing addons_config.mistyproxy: {type(err)}: {err}')
-            return
+    if ptype == 'mistyproxy':
+        with rrdb.create_session_context() as session:
+            wdeployment = (
+                session.query(rrdb.Deployment)
+                .filter(rrdb.Deployment.deploymentid == wdeployment_id)
+                .one()
+            )
+            try:
+                addons_config = json.loads(wdeployment.addons_config)
+                if 'mistyproxy' in addons_config:
+                    targetipaddr = addons_config['mistyproxy']['ip']
+            except Exception as err:
+                logger.error(f'error parsing addons_config.mistyproxy: {type(err)}: {err}')
+                return
 
     # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
     # provide key text via stdin of child process.
@@ -135,7 +149,7 @@ def start_mistyproxy(user, instance_id):
         '80',
         '--name',
         pid,
-        'rerobots-addons/mistyproxy',
+        'rerobots-addons/mistyproxy', # TODO: other images for other ptype
         '-h',
         ptoken,
     ]
@@ -180,7 +194,7 @@ def start_mistyproxy(user, instance_id):
         get_port, stdout=subprocess.PIPE
     )  # Wait to complete because this is prerequisite
     if cmd_p.returncode != 0:
-        raise Exception('addon mistyproxy: failed to get port number')
+        raise Exception(f'addon {ptype}: failed to get port number')
     fwdaddrport = cmd_p.stdout.decode('utf-8').split('\n')[0].strip()
     fwdaddr, fwdport = fwdaddrport.split(':')
 
@@ -191,7 +205,7 @@ def start_mistyproxy(user, instance_id):
 
     urls = [
         f'api.rerobots.net:{fwdport}/{ptoken}',
-        f'https://api.rerobots.net/proxy/{ihash}/mistyproxy/{ptoken}',
+        f'https://api.rerobots.net/proxy/{ihash}/{ptype}/{ptoken}',
     ]
 
     with rrdb.create_session_context() as session:
@@ -199,7 +213,7 @@ def start_mistyproxy(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:mistyproxy',
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:{ptype}',
             )
             .one()
         )
@@ -214,7 +228,7 @@ def start_mistyproxy(user, instance_id):
         session.add(
             rrdb.ActiveProxy(
                 instance_hash=ihash,
-                addon='mistyproxy',
+                addon=ptype,
                 token=ptoken,
                 address=addr,
                 port=fwdport,
@@ -232,14 +246,22 @@ def start_mistyproxy(user, instance_id):
 
 @capp.task
 def stop_mistyproxy(user, instance_id):
-    pid = f'{instance_id}__mistyproxy'
+    stop_httpproxy.delay(user, instance_id, ptype='mistyproxy')
+
+
+@capp.task
+def stop_httpproxy(user, instance_id, ptype=None):
+    if ptype is None:
+        ptype = 'httpp' # httpproxy
+
+    pid = f'{instance_id}__{ptype}'
     ihash = hashlib.sha256(bytes(instance_id, encoding='utf-8')).hexdigest()
     with rrdb.create_session_context() as session:
         activeaddon = (
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:mistyproxy',
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:{ptype}',
             )
             .one()
         )
@@ -250,7 +272,7 @@ def stop_mistyproxy(user, instance_id):
             session.query(rrdb.ActiveProxy)
             .filter(
                 rrdb.ActiveProxy.instance_hash == ihash,
-                rrdb.ActiveProxy.addon == 'mistyproxy',
+                rrdb.ActiveProxy.addon == ptype,
                 rrdb.ActiveProxy.token == ptoken,
             )
             .one_or_none()
@@ -264,7 +286,7 @@ def stop_mistyproxy(user, instance_id):
             return
         else:
             logger.warning(
-                f'vacuous call, no active proxy found for {ihash}, mistyproxy, {ptoken}'
+                f'vacuous call, no active proxy found for {ihash}, {ptype}, {ptoken}'
             )
             return
 
