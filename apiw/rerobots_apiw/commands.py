@@ -13,7 +13,7 @@ Copyright (C) 2017 rerobots, Inc.
 from ast import literal_eval
 import asyncio
 import base64
-from datetime import datetime, timedelta
+from datetime import timedelta
 import json
 import logging
 import math
@@ -29,6 +29,7 @@ from . import db as rrdb
 from .cap import accept_instantiate
 from .requestproc import process_headers, rate_limit
 from .settings import CACHE_TTL
+from .util import now
 
 
 logger = logging.getLogger(__name__)
@@ -444,7 +445,7 @@ def get_wdinfo(dbsession, wdeployment_id, username, is_superuser=False):
     if is_superuser:
         wdinfo['heartbeat'] = str(row.last_heartbeat)
     wdinfo['online'] = row.date_dissolved is None and (
-        datetime.utcnow() - row.last_heartbeat < timedelta(seconds=30)
+        now() - row.last_heartbeat < timedelta(seconds=30)
     )
     if username is not None:
         instances = (
@@ -848,7 +849,6 @@ async def make_new_vpnclient(request):
         rrdb.VPNClient(
             instanceid=instanceid,
             user=data['user'],
-            creationtime=datetime.utcnow(),
             client_id=blob['client_id'],
             ovpn=blob['ovpn_config'],
         )
@@ -889,7 +889,7 @@ def compute_queuelen(dbsession, wdeployment_id, get_current_rem=False):
         if exp:
             remaining_duration = (
                 exp.target_duration
-                - (datetime.utcnow() - current_instance.starttime).seconds
+                - (now() - current_instance.starttime).seconds
             )
         else:
             remaining_duration = None
@@ -991,7 +991,6 @@ async def signin(request):
             user=user,
             token=token,
             nonce=nonce,
-            creationtime=datetime.utcnow(),
             origin=peername,
         )
     )
@@ -1196,7 +1195,7 @@ async def get_queue_lengths(request):
 
         if (
             row.last_heartbeat is None
-            or datetime.utcnow().timestamp() - row.last_heartbeat.timestamp() > 60.0
+            or now().timestamp() - row.last_heartbeat.timestamp() > 60.0
         ):
             continue
 

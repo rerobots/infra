@@ -6,7 +6,6 @@ Copyright (C) 2017, 2018 rerobots, Inc.
 """
 
 from contextlib import contextmanager
-from datetime import datetime
 
 import sqlalchemy
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
@@ -19,6 +18,9 @@ from .settings import DB_URL
 
 Base = declarative_base()
 
+def Timestamp():
+    return DateTime(timezone=True)
+
 
 class Deployment(Base):
     __tablename__ = 'deployments'
@@ -30,12 +32,12 @@ class Deployment(Base):
     addons_config = Column(Text, default='')  # in JSON
     description = Column(Text, default='')
     region = Column(String)
-    date_created = Column(DateTime, default=datetime.utcnow)
+    date_created = Column(Timestamp(), default=now)
     instance_counter = Column(Integer, default=0)
     last_heartbeat = Column(
-        DateTime, default=datetime.utcnow
+        Timestamp(), default=now
     )  # only defined when date_dissolved is NULL
-    date_dissolved = Column(DateTime)
+    date_dissolved = Column(Timestamp())
     locked_out = Column(
         Boolean, default=False
     )  # no new instances; OK if current instance
@@ -75,14 +77,14 @@ class WDMonitorHeartbeat(Base):
     deploymentid = Column(String, nullable=False)
     user = Column(String, nullable=False)
     constraint_uniq = UniqueConstraint(deploymentid, user)
-    alert_sent = Column(DateTime(timezone=True))
+    alert_sent = Column(Timestamp())
 
 
 class CommandFileTrace(Base):
     __tablename__ = 'command_file_traces'
     id = Column(Integer, primary_key=True)
     instance_id = Column(String)
-    timestamp = Column(DateTime, default=datetime.utcnow)
+    timestamp = Column(Timestamp(), default=now)
     path = Column(Text, default='')
     data = Column(Text, default='')
 
@@ -90,7 +92,7 @@ class CommandFileTrace(Base):
 class DeploymentACL(Base):
     __tablename__ = 'wdeployment_access_control'
     id = Column(Integer, primary_key=True)
-    date_created = Column(DateTime)  # TODO: default=datetime.utcnow
+    date_created = Column(Timestamp(), default=now)
     user = Column(String)
     wdeployment_id = Column(String)
     capability = Column(String)
@@ -126,7 +128,7 @@ class InstanceEvent(Base):
     __tablename__ = 'instance_events'
     id = Column(Integer, primary_key=True)
     instanceid = Column(String, nullable=False)
-    timestamp = Column(DateTime(timezone=True), default=now)
+    timestamp = Column(Timestamp(), default=now)
     kind = Column(String, nullable=False)
     data = Column(Text)
 
@@ -135,7 +137,7 @@ class InstanceKeepAlive(Base):
     __tablename__ = 'instance_keepalive'
     id = Column(Integer, primary_key=True)
     instanceid = Column(String, nullable=False, unique=True)
-    last_ping = Column(DateTime(timezone=True), default=now)
+    last_ping = Column(Timestamp(), default=now)
 
 
 class InstanceExpiration(Base):
@@ -165,7 +167,7 @@ class VPNClient(Base):
     id = Column(Integer, primary_key=True)
     instanceid = Column(String)
     user = Column(String)
-    creationtime = Column(DateTime)
+    creationtime = Column(DateTime, default=now)
     client_id = Column(String)
     ovpn = Column(Text)
 
@@ -180,7 +182,7 @@ class APIToken(Base):
     user = Column(String)
     token = Column(Text)
     sha256 = Column(String)
-    creationtime = Column(DateTime, default=datetime.utcnow)
+    creationtime = Column(Timestamp(), default=now)
     origin = Column(String)
     revoked = Column(Boolean, default=False)
 
@@ -222,7 +224,7 @@ class CIBuild(Base):
     id = Column(Integer, primary_key=True)
     job_id = Column(Integer, ForeignKey('ci_jobs.id'))
     job = relationship('CIJob', back_populates='ci_builds')
-    request_time = Column(DateTime, default=datetime.utcnow)
+    request_time = Column(Timestamp(), default=now)
 
 
 class CIJob(Base):
@@ -233,7 +235,7 @@ class CIJob(Base):
     project = relationship('CIProject', back_populates='ci_jobs')
     branch = Column(String, default='')  # branch name; not required
     ref = Column(String)  # e.g, commit hash
-    start_time = Column(DateTime, default=datetime.utcnow)
+    start_time = Column(Timestamp(), default=now)
 
 
 class CIProject(Base):
@@ -243,14 +245,14 @@ class CIProject(Base):
     name = Column(String)
     user = Column(String)
     repo_url = Column(String)
-    created = Column(DateTime, default=datetime.utcnow)
+    created = Column(Timestamp(), default=now)
     is_dissolved = Column(Boolean, default=False)
 
 
 class MailingListMember(Base):
     __tablename__ = 'mailinglist_members'
     id = Column(Integer, primary_key=True)
-    joined = Column(DateTime, default=datetime.utcnow)
+    joined = Column(Timestamp(), default=now)
     name = Column(String)
     emailaddr = Column(String, unique=True)
     topic = Column(String, default='')
@@ -265,7 +267,7 @@ class AnonUser(Base):
 
     __tablename__ = 'anonymous_users'
     id = Column(Integer, primary_key=True)
-    creationtime = Column(DateTime, default=datetime.utcnow)
+    creationtime = Column(Timestamp(), default=now)
     origin = Column(String)
     wtype = Column(String, default='')
 

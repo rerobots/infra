@@ -2,7 +2,7 @@
 Copyright (C) 2022 rerobots, Inc.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from celery.utils.log import get_task_logger
 
@@ -32,7 +32,7 @@ def check_heartbeats():
                     f'skipping heartbeat check of dissolved deployment {rule.deploymentid}'
                 )
                 continue
-            if datetime.utcnow() - wd.last_heartbeat >= timedelta(seconds=30):
+            if now() - wd.last_heartbeat >= timedelta(seconds=30):
                 wd.locked_out = True
                 session.commit()
                 # TODO: support other users

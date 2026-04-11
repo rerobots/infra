@@ -4,7 +4,6 @@ Copyright (C) 2019 rerobots, Inc.
 """
 
 import copy
-from datetime import datetime
 import json
 
 import pytest
@@ -13,6 +12,7 @@ from fixtures import client, wdconfig
 
 import rerobots_apiw.db as rrdb
 from rerobots_apiw import tasks
+from rerobots_apiw.util import now
 
 
 pytestmark = pytest.mark.filterwarnings(
@@ -93,7 +93,7 @@ async def test_wd_info(client, wdconfig):
             .one_or_none()
         )
         assert wd is not None
-        wd.date_dissolved = datetime.utcnow()
+        wd.date_dissolved = now()
         date_dissolved_expected = str(wd.date_dissolved)
 
     resp = await client.get('/deployment/07ae6006-36a2-4399-8ad3-bf9e58633a05')
@@ -121,7 +121,7 @@ async def test_wd_dissolved_search(client, wdconfig):
             .one_or_none()
         )
         assert wd is not None
-        wd.date_dissolved = datetime.utcnow()
+        wd.date_dissolved = now()
 
     # verify not returned in simple list of workspace deployments
     resp = await client.get('/deployments')

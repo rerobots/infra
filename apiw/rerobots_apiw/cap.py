@@ -5,7 +5,6 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
-from datetime import datetime
 import logging
 
 from aiohttp import web
@@ -163,7 +162,6 @@ async def create_access_rule(request):
 
     if query.count() == 0:
         dacl = rrdb.DeploymentACL(
-            date_created=datetime.utcnow(),
             user=to_user,
             capability=capability,
             wdeployment_id=wd.deploymentid,

@@ -4,7 +4,6 @@ Copyright (C) 2020 rerobots, Inc.
 """
 
 import asyncio
-from datetime import datetime
 import json
 import logging
 import math
@@ -20,7 +19,7 @@ from . import db as rrdb
 from .requestproc import process_headers
 from . import tasks, tunnel_hub_tasks
 from .hschannels import CommandChannel, ConnectionChannel
-from .util import create_subprocess_exec
+from .util import create_subprocess_exec, now
 
 
 logger = logging.getLogger(__name__)
@@ -626,7 +625,7 @@ async def terminate_instance_on_mine(request):
             headers=data['response_headers'],
         )
 
-    row.terminating_started_at = datetime.utcnow()
+    row.terminating_started_at = now()
     row.status = 'TERMINATING'
     tasks.terminate_instance.delay(row.instanceid, row.deploymentid)
 
@@ -867,7 +866,7 @@ async def dissolve_wdeployment(request):
             status=400,
             headers=data['response_headers'],
         )
-    wd.date_dissolved = datetime.utcnow()
+    wd.date_dissolved = now()
     tasks.dissolve_user_provided.delay(
         wdeployment_id=wd.deploymentid,
         owner=usupp.owner,
@@ -1165,7 +1164,7 @@ async def advertise_wdeployment(request):
                             else:
                                 inst.status = payload['s']
                                 if inst.status == 'READY' and inst.ready_at is None:
-                                    inst.ready_at = datetime.utcnow()
+                                    inst.ready_at = now()
                                 if 'h' in payload:
                                     inst.hostkey = payload['h']
                                     logger.debug(

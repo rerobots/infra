@@ -4,13 +4,14 @@ SCL <scott@rerobots>
 Copyright (C) 2022 rerobots, Inc.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 import json
 import os
 import uuid
 
 import rerobots_apiw.db as rrdb
 from rerobots_apiw.tasks import _create_new_wdeployment_main
+from rerobots_apiw.util import now
 
 
 username = 'staging_user'
@@ -116,7 +117,7 @@ with rrdb.create_session_context() as session:
         .one()
     )
 
-    t = datetime.utcnow()
+    t = now()
     hardshare_instance = rrdb.Instance(
         deploymentid=hardshare_wdeployment_id,
         instanceid=str(uuid.uuid4()),

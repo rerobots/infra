@@ -5,7 +5,6 @@ Copyright (C) 2019 rerobots, Inc.
 
 import asyncio
 import copy
-from datetime import datetime
 import unittest.mock
 import os
 import os.path
@@ -22,6 +21,7 @@ import rerobots_apiw.db as rrdb
 from rerobots_apiw.factory import create_application
 from rerobots_apiw.settings import DB_URL
 from rerobots_apiw import tasks
+from rerobots_apiw.util import now
 
 
 def cleardb():
@@ -266,7 +266,7 @@ def wd_null_dissolved(wd_null):
             .one_or_none()
         )
         assert wd is not None
-        wd.date_dissolved = datetime.utcnow()
+        wd.date_dissolved = now()
     return {'client': wd_null['client'], 'id': wd_null['id']}
 
 

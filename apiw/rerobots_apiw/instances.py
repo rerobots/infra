@@ -5,7 +5,7 @@ SCL <scott@rerobots>
 Copyright (C) 2018 rerobots, Inc.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import logging
 import math
@@ -290,7 +290,7 @@ async def get_instance_info(request):
                 row.status = str(rstatus, encoding='utf-8')
                 red.hdel('instance:' + row.instanceid, 'status')
                 if row.status == 'READY' and row.ready_at is None:
-                    row.ready_at = datetime.utcnow()
+                    row.ready_at = now()
 
         payload['fwd'] = dict()
         if red.hexists('instance:' + row.instanceid, 'ipv4'):
@@ -540,7 +540,7 @@ async def request_instance(request):
 
             if (
                 row.last_heartbeat is None
-                or datetime.utcnow().timestamp() - row.last_heartbeat.timestamp() > 60.0
+                or now().timestamp() - row.last_heartbeat.timestamp() > 60.0
             ):
                 error_msg = (
                     'workspace deployment temporarily unavailable, try again later'
@@ -618,7 +618,8 @@ async def request_instance(request):
                 )
 
         oldest_accepted_timestamp = datetime.fromtimestamp(
-            datetime.utcnow().timestamp() - 60.0
+            now().timestamp() - 60.0,
+            timezone.utc
         )
         matches = (
             request['dbsession']
@@ -738,7 +739,7 @@ async def request_instance(request):
         reservation = rrdb.Reservation(
             reservationid=str(uuid.uuid4()),
             user=data['user'],
-            createdtime=datetime.utcnow(),
+            createdtime=now(),
             rfilter='wd:{}'.format(deploymentid),
             ssh_publickey=ssh_publickey,
             has_vpn=opts['vpn'],
@@ -819,7 +820,7 @@ async def terminate_instance(request):
             status=400,
             headers=data['response_headers'],
         )
-    row.terminating_started_at = datetime.utcnow()
+    row.terminating_started_at = now()
     row.status = 'TERMINATING'
     tasks.terminate_instance.delay(row.instanceid, row.deploymentid)
     return web.Response(headers=data['response_headers'])

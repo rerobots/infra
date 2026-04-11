@@ -4,7 +4,6 @@ Copyright (C) 2017 rerobots, Inc.
 """
 
 import asyncio
-from datetime import datetime
 import json
 import logging
 import time
@@ -13,6 +12,7 @@ import pika
 import pika.adapters.asyncio_connection
 import redis
 
+from .util import now
 from . import db as rrdb
 from . import tasks, tunnel_hub_tasks
 from . import settings
@@ -245,7 +245,7 @@ class EACommandChannel:
 
                     instance.status = msg['status']
                     if instance.status == 'READY' and instance.ready_at is None:
-                        instance.ready_at = datetime.utcnow()
+                        instance.ready_at = now()
                     if 'ipv4' in msg:
                         instance.listening_ipaddr = msg['ipv4']
                         if 'port' in msg:
@@ -272,7 +272,7 @@ class EACommandChannel:
                 if wd is None:
                     logger.warning('unknown wdeployment {}'.format(msg['id']))
                 else:
-                    wd.last_heartbeat = datetime.utcnow()
+                    wd.last_heartbeat = now()
 
         elif msg['command'] == 'LOCKOUT':
             logger.debug('received lockout from wdeployment {}'.format(msg['id']))

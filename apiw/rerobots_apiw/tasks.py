@@ -4,7 +4,7 @@ Copyright (C) 2018 rerobots, Inc.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import timedelta
 import json
 import logging
 import os
@@ -26,6 +26,7 @@ from .addons import addon_vnc_stop_job, addon_vnc_waitdelete_job, addon_cam_stop
 from .addons import addon_drive_stop_job, addon_cmd_stop_job
 from .addons.cmdsh import stop_job as addon_cmdsh_stop_job
 from .addons.wstcp import addon_wstcp_stop_job, addon_wstcp_waitdelete_job
+from .util import now
 from . import db as rrdb
 from .celery import app as capp
 from . import proxy_tasks
@@ -197,7 +198,7 @@ def terminate_instance(instance_id, wdeployment_id):
             # No-op if already terminated
             return
         if inst.status != 'TERMINATING':
-            inst.terminating_started_at = datetime.utcnow()
+            inst.terminating_started_at = now()
             inst.status = 'TERMINATING'
 
     if_stuck_terminating.apply_async((instance_id,), countdown=70)
@@ -280,7 +281,7 @@ def terminate_instance(instance_id, wdeployment_id):
             .filter(rrdb.Instance.instanceid == instance_id)
             .one()
         )
-        row.endtime = datetime.utcnow()
+        row.endtime = now()
         row.status = 'TERMINATED'
         event_url = row.event_url
         user = row.rootuser
@@ -350,12 +351,12 @@ def do_periodic():
             )
             if inst.status in ['TERMINATING', 'TERMINATED', 'INIT_FAIL']:
                 session.delete(row)
-            elif (datetime.utcnow() - inst.starttime).seconds >= row.target_duration:
+            elif (now() - inst.starttime).seconds >= row.target_duration:
                 # TODO: send notification if event url nonempty
                 logger.debug(
                     'detected that instance {} should expire!'.format(inst.instanceid)
                 )
-                inst.terminating_started_at = datetime.utcnow()
+                inst.terminating_started_at = now()
                 inst.status = 'TERMINATING'
                 terminate_instance.delay(inst.instanceid, inst.deploymentid)
 
@@ -378,7 +379,7 @@ def expire_instance(instance_id):
         if inst.status in ['TERMINATING', 'TERMINATED', 'INIT_FAIL']:
             session.delete(exp)
             return
-        tdiff = (datetime.utcnow() - inst.starttime).seconds
+        tdiff = (now() - inst.starttime).seconds
         if tdiff < exp.target_duration:
             logger.warning('called too early; scheduling again to later')
             expire_instance.apply_async(
@@ -387,14 +388,13 @@ def expire_instance(instance_id):
             return
         session.delete(exp)
         # TODO: send notification if event url nonempty
-        inst.terminating_started_at = datetime.utcnow()
+        inst.terminating_started_at = now()
         inst.status = 'TERMINATING'
         terminate_instance.delay(inst.instanceid, inst.deploymentid)
 
 
 @capp.task(bind=True)
 def if_stuck_init(self, instance_id):
-    now = datetime.utcnow()
     with rrdb.create_session_context() as session:
         instance = (
             session.query(rrdb.Instance)
@@ -410,7 +410,7 @@ def if_stuck_init(self, instance_id):
             .filter(rrdb.Deployment.deploymentid == instance.deploymentid)
             .one()
         )
-        if instance.status == 'INIT' and now - instance.starttime > timedelta(
+        if instance.status == 'INIT' and now() - instance.starttime > timedelta(
             seconds=60
         ):
             wd.locked_out = True
@@ -419,7 +419,6 @@ def if_stuck_init(self, instance_id):
 
 @capp.task(bind=True)
 def if_stuck_terminating(self, instance_id):
-    now = datetime.utcnow()
     with rrdb.create_session_context() as session:
         instance = (
             session.query(rrdb.Instance)
@@ -435,7 +434,7 @@ def if_stuck_terminating(self, instance_id):
         )
         if (
             instance.status == 'TERMINATING'
-            and now - instance.terminating_started_at > timedelta(seconds=60)
+            and now() - instance.terminating_started_at > timedelta(seconds=60)
         ):
             wd.locked_out = True
             instance.status = 'TERMINATED'
@@ -497,7 +496,7 @@ def launch_instance(
                         deploymentid=wdeployment_id,
                         instanceid=instance_id,
                         rootuser=user,
-                        starttime=datetime.utcnow(),
+                        starttime=now(),
                         status='INIT_FAIL',
                         has_vpn=has_vpn,
                         ssh_privatekey=ssh_privatekey,
@@ -528,7 +527,7 @@ def launch_instance(
                 deploymentid=wdeployment_id,
                 instanceid=instance_id,
                 rootuser=user,
-                starttime=datetime.utcnow(),
+                starttime=now(),
                 status='INIT',
                 has_vpn=has_vpn,
                 ssh_privatekey=ssh_privatekey,
@@ -891,7 +890,6 @@ def _create_new_wdeployment_main(wdeployment_id, config):
                 )
                 session.add(userprovided)
                 dacl = rrdb.DeploymentACL(
-                    date_created=datetime.utcnow(),
                     user=config['hs']['owner'],
                     capability='CAP_INSTANTIATE',
                     wdeployment_id=wdeployment_id,
@@ -999,9 +997,9 @@ def dissolve_user_provided(wdeployment_id, owner, date_dissolved):
 # TODO: filter localhost and rerobots-internal targets when not DEBUG
 def notify_user(event_url, payload):
     logger.info('sending event notification to {}'.format(event_url))
-    now = time.time()
+    ts = time.time()
     tok = jwt.encode(
-        {'exp': int(now) + 10, 'nbf': int(now) - 1},
+        {'exp': int(ts) + 10, 'nbf': int(ts) - 1},
         key=settings.PRIVATE_KEY,
         algorithm='RS256',
     )

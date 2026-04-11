@@ -3,7 +3,6 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
-from datetime import datetime
 
 import pytest
 
@@ -12,6 +11,7 @@ from fixtures import api_token_su
 
 import rerobots_apiw.db as rrdb
 from rerobots_apiw import tasks
+from rerobots_apiw.util import now
 
 
 pytestmark = pytest.mark.filterwarnings(
@@ -172,7 +172,7 @@ async def test_wd_dissolved_list(client, hs_wdconfig, api_token):
             .one_or_none()
         )
         assert wd is not None
-        wd.date_dissolved = datetime.utcnow()
+        wd.date_dissolved = now()
 
     # verify not returned in simple list of owned workspace deployments
     resp = await client.get('/hardshare/list', headers=headers)
@@ -210,7 +210,7 @@ async def test_wd_dissolve(client, hs_wdconfig, api_token):
     assert len(body['wdeployments']) == 1
 
     # receive request to dissolve from hardshare server (mock)
-    dissolved = datetime.utcnow()
+    dissolved = now()
     tasks.dissolve_user_provided(
         wdeployment_id='07ae6006-36a2-4399-8ad3-bf9e58633a05',
         owner='bilbo',

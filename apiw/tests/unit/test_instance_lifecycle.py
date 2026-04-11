@@ -4,7 +4,7 @@ Copyright (C) 2020 rerobots, Inc.
 """
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 
 import sqlalchemy
 
@@ -12,6 +12,7 @@ from fixtures import api_token, client, wdconfig, wd_null, wd_null_dissolved, wd
 
 import rerobots_apiw.db as rrdb
 from rerobots_apiw import tasks
+from rerobots_apiw.util import now
 
 
 async def test_wd_no_launch_permission(wd_null, api_token):
@@ -94,7 +95,7 @@ async def test_wd_no_launch_old_heartbeat(wd_null, api_token):
             .filter(rrdb.Deployment.deploymentid == wdeployment_id)
             .one()
         )
-        wd.last_heartbeat = datetime.fromtimestamp(1)
+        wd.last_heartbeat = datetime.fromtimestamp(1, timezone.utc)
 
     resp = await asyncio.wait_for(
         client.post('/new/{}'.format(wdeployment_id), headers=headers), timeout=5
@@ -108,7 +109,7 @@ async def test_wd_no_launch_old_heartbeat(wd_null, api_token):
             .filter(rrdb.Deployment.deploymentid == wdeployment_id)
             .one()
         )
-        wd.last_heartbeat = datetime.utcnow()
+        wd.last_heartbeat = now()
 
     resp = await asyncio.wait_for(
         client.post('/new/{}'.format(wdeployment_id), headers=headers), timeout=5
@@ -140,7 +141,7 @@ async def test_wtype_no_launch_old_heartbeat(wd_null, api_token):
             .filter(rrdb.Deployment.deploymentid == wdeployment_id)
             .one()
         )
-        wd.last_heartbeat = datetime.fromtimestamp(1)
+        wd.last_heartbeat = datetime.fromtimestamp(1, timezone.utc)
 
     resp = await asyncio.wait_for(client.post('/new/null', headers=headers), timeout=5)
     assert resp.status == 404
@@ -152,7 +153,7 @@ async def test_wtype_no_launch_old_heartbeat(wd_null, api_token):
             .filter(rrdb.Deployment.deploymentid == wdeployment_id)
             .one()
         )
-        wd.last_heartbeat = datetime.utcnow()
+        wd.last_heartbeat = now()
 
     resp = await asyncio.wait_for(client.post('/new/null', headers=headers), timeout=5)
     assert resp.status == 200
@@ -172,9 +173,9 @@ async def test_wdmulti_no_launch_old_heartbeat(wd_null2, api_token):
                 )
             ):
                 if it < count:
-                    wd.last_heartbeat = datetime.utcnow()
+                    wd.last_heartbeat = now()
                 else:
-                    wd.last_heartbeat = datetime.fromtimestamp(1)
+                    wd.last_heartbeat = datetime.fromtimestamp(1, timezone.utc)
                 it += 1
 
     # none recent last_heartbeat

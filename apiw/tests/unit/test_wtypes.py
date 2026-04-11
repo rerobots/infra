@@ -4,7 +4,6 @@ Copyright (C) 2019 rerobots, Inc.
 """
 
 from copy import deepcopy
-from datetime import datetime
 
 import pytest
 
@@ -12,6 +11,7 @@ from fixtures import client, wdconfig
 
 import rerobots_apiw.db as rrdb
 from rerobots_apiw import tasks
+from rerobots_apiw.util import now
 
 
 pytestmark = pytest.mark.filterwarnings(
@@ -88,7 +88,7 @@ async def test_wd_dissolved_wtypes(client, wdconfig):
             .one_or_none()
         )
         assert wd is not None
-        wd.date_dissolved = datetime.utcnow()
+        wd.date_dissolved = now()
 
     # verify no wtypes listed after dissolving the only workspace deployment
     resp = await client.get('/workspaces')
