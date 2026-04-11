@@ -56,16 +56,6 @@ async def cors_handler(request, handler):
         response.headers['Access-Control-Allow-Origin'] = 'https://hardshare.dev'
     elif (
         'Origin' in request.headers
-        and request.headers['Origin'] == 'https://caminobot.com'
-    ):
-        response.headers['Access-Control-Allow-Origin'] = 'https://caminobot.com'
-    elif (
-        'Origin' in request.headers
-        and request.headers['Origin'] == 'https://learnrobot.dev'
-    ):
-        response.headers['Access-Control-Allow-Origin'] = 'https://learnrobot.dev'
-    elif (
-        'Origin' in request.headers
         and request.headers['Origin'] == settings.WEBUI_ORIGIN
     ):
         response.headers['Access-Control-Allow-Origin'] = settings.WEBUI_ORIGIN
