@@ -60,6 +60,6 @@ setup(
         'redis',
         'requests>=2.32,<2.33',
         'sentry-sdk>=1.5,<1.6',
-        'sqlalchemy>=1.3,<2.0',
+        'sqlalchemy>=2.0,<2.1',
     ],
 )
