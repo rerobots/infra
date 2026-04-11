@@ -36,11 +36,11 @@ if ORIGIN.startswith('http://'):
 else:
     WS_ORIGIN = 'wss://' + ORIGIN[len('https://') :]
 
-DB_URL = 'postgresql://rra:@127.0.0.1/rrdb'
+DB_URL = 'postgresql+psycopg://rra:@127.0.0.1/rrdb'
 if os.environ.get('REROBOTS_ENVIRONMENT') == 'CI':
-    DB_URL = 'postgresql:///rrdb'
+    DB_URL = 'postgresql+psycopg:///rrdb'
 elif RUNTIME_ENVIRON.startswith('staging'):
-    DB_URL = 'postgresql://rra:@postgres:5432/rrdb'
+    DB_URL = 'postgresql+psycopg://rra:@postgres:5432/rrdb'
 
 AMQP_HOST = '127.0.0.1'
 AMQP_PORT = 5672
