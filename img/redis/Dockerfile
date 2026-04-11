@@ -11,4 +11,4 @@ RUN apt-get update \
        redis
 
 
-CMD ["redis-server", "--bind", "0.0.0.0"]
+CMD ["redis-server", "--protected-mode", "no", "--bind", "0.0.0.0"]
