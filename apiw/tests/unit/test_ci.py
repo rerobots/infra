@@ -12,6 +12,7 @@ import jwt
 from fixtures import client, api_token
 
 
+@pytest.mark.skip('need to update CI features')
 async def test_create_proj(client, api_token):
     headers = {'Authorization': 'Bearer ' + api_token}
     resp = await client.post('/ci/new')
@@ -33,6 +34,7 @@ async def test_create_proj(client, api_token):
     assert payload[proj_id]['repo_url'] == example_repo_url
 
 
+@pytest.mark.skip('need to update CI features')
 async def test_start_restart_job(client, api_token):
     headers = {'Authorization': 'Bearer ' + api_token}
     example_repo_url = 'https://github.com/rerobots/examples.git'

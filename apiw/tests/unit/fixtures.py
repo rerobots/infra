@@ -165,19 +165,19 @@ def mock_tasks(monkeypatch):
 
 
 @pytest.fixture
-def client(event_loop, aiohttp_client, monkeypatch):
+async def client(aiohttp_client, monkeypatch):
     mock_channels(monkeypatch)
     mock_tasks(monkeypatch)
-    yield event_loop.run_until_complete(aiohttp_client(create_application()))
+    yield await aiohttp_client(create_application())
     cleardb()
     clearks()
 
 
 @pytest.fixture
-def client_no_new_hs_billingplans(event_loop, aiohttp_client, monkeypatch):
+async def client_no_new_hs_billingplans(aiohttp_client, monkeypatch):
     mock_channels(monkeypatch)
     mock_tasks(monkeypatch)
-    yield event_loop.run_until_complete(aiohttp_client(create_application()))
+    yield await aiohttp_client(create_application())
     cleardb()
     clearks()
 
