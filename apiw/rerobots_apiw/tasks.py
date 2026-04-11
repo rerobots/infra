@@ -1004,7 +1004,7 @@ def notify_user(event_url, payload):
         algorithm='RS256',
     )
     headers = {
-        'Authorization': 'Bearer {}'.format(str(tok, encoding='utf-8')),
+        'Authorization': 'Bearer {}'.format(tok),
     }
     if event_url.startswith('https://') or (
         settings.DEBUG and event_url.startswith('http://')

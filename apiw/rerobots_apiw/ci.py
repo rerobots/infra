@@ -98,7 +98,7 @@ async def post_ci_job(request):
         {'exp': int(now) + 10, 'nbf': int(now) - 1}, key=PRIVATE_KEY, algorithm='RS256'
     )
     headers = {
-        'Authorization': 'Bearer {}'.format(str(tok, encoding='utf-8')),
+        'Authorization': 'Bearer {}'.format(tok),
     }
 
     payload = {
@@ -166,7 +166,7 @@ async def create_project(request):
         {'exp': int(now) + 10, 'nbf': int(now) - 1}, key=PRIVATE_KEY, algorithm='RS256'
     )
     headers = {
-        'Authorization': 'Bearer {}'.format(str(tok, encoding='utf-8')),
+        'Authorization': 'Bearer {}'.format(tok),
     }
     payload = {
         'name': pname,

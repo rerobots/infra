@@ -55,10 +55,7 @@ async def get_api_token(request):
             'exp': creationtime + 1800,
             'nbf': creationtime - 1,
         }
-        tok = str(
-            jwt.encode(payload, key=WEBUI_SECRET_KEY, algorithm='RS256'),
-            encoding='utf-8',
-        )
+        tok = jwt.encode(payload, key=WEBUI_SECRET_KEY, algorithm='RS256')
     except Exception as err:
         request['dbsession'].rollback()
         logger.warning('caught {}: {}'.format(type(err), err))

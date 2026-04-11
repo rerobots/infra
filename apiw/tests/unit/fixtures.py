@@ -211,9 +211,7 @@ def api_token():
         'exp': creationtime + 60,
         'nbf': creationtime - 1,
     }
-    return str(
-        jwt.encode(payload, key=WEBUI_SECRET_KEY, algorithm='RS256'), encoding='utf-8'
-    )
+    return jwt.encode(payload, key=WEBUI_SECRET_KEY, algorithm='RS256')
 
 
 @pytest.fixture
@@ -227,9 +225,7 @@ def api_token_su():
         'exp': creationtime + 60,
         'nbf': creationtime - 1,
     }
-    return str(
-        jwt.encode(payload, key=WEBUI_SECRET_KEY, algorithm='RS256'), encoding='utf-8'
-    )
+    return jwt.encode(payload, key=WEBUI_SECRET_KEY, algorithm='RS256')
 
 
 @pytest.fixture

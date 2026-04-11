@@ -980,11 +980,8 @@ async def signin(request):
     else:
         peername = str(request.transport.get_extra_info('peername')[0])
     nonce = str(base64.urlsafe_b64encode(os.urandom(16)), encoding='utf-8')
-    token = str(
-        jwt.encode(
-            {'user': user, 'nonce': nonce}, request.app['ephkey'], algorithm='HS256'
-        ),
-        encoding='utf-8',
+    token = jwt.encode(
+        {'user': user, 'nonce': nonce}, request.app['ephkey'], algorithm='HS256'
     )
     request['dbsession'].add(
         rrdb.APIToken(

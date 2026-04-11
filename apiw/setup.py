@@ -56,7 +56,7 @@ setup(
         'gunicorn>=20.1,<20.2',
         'pika==1.2',
         'psycopg[binary]',
-        'pyjwt<2',
+        'pyjwt>=2.12,<2.13',
         'redis',
         'requests>=2.32,<2.33',
         'sentry-sdk>=1.5,<1.6',
