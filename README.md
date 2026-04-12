@@ -26,25 +26,7 @@ Running locally
 ---------------
 
     podman-compose up
-
-Then,
-
-    podman exec -it infra_rabbitmq_1 rabbitmqctl add_vhost core
-    podman exec -it infra_rabbitmq_1 rabbitmqctl set_permissions --vhost core guest '.*' '.*' '.*'
-    podman exec -it infra_rabbitmq_1 rabbitmqctl add_vhost webui
-    podman exec -it infra_rabbitmq_1 rabbitmqctl set_permissions --vhost webui guest '.*' '.*' '.*'
-
-Initialize for the database schema,
-
-    podman cp img/schema/init.sh infra_postgres_1:/root/init.sh
-    podman exec infra_postgres_1 /root/init.sh
-
-If this fails, add `-f` to drop existing databases.
-
-Seed the database with users (staging_user and staging_admin) and other data,
-
-    cd apiw && pipenv run ./tests/seed.py && cd ..
-    cd web && ./tools/seed-devel-db.sh && cd ..
+    bin/local-prep.sh
 
 Given the default DEBUG settings of the dashboard,
 
