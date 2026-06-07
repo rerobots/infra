@@ -1166,6 +1166,8 @@ async def advertise_wdeployment(request):
                                 if inst.status == 'READY':
                                     if inst.ready_at is None:
                                         inst.ready_at = now()
+                                    if 'r' in payload:
+                                        inst.services = json.dumps(payload['r'])
 
                                 if 'h' in payload:
                                     inst.hostkey = payload['h']

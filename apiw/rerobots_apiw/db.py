@@ -122,6 +122,7 @@ class Instance(Base):
         String
     )  # hostname on which the associated_th container resides
     hostkey = Column(String, default='')
+    services = Column(String)  # JSON, mapping env names to address:port
     event_url = Column(Text, default='')
 
 

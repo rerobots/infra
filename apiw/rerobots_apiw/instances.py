@@ -274,6 +274,9 @@ async def get_instance_info(request):
     if row.endtime is not None:
         payload['endtime'] = str(row.endtime)
 
+    if row.status == 'READY' and row.services is not None:
+        payload['services'] = json.loads(row.services)
+
     if row.status not in ['TERMINATED', 'TERMINATING', 'INIT_FAIL']:
         red = request.app['red']
         if (
