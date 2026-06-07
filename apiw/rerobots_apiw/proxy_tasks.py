@@ -43,7 +43,7 @@ def start_httpproxy(user, instance_id, ptype=None):
     # The main challenge is to be aware if another request (via this
     # APIW or another) arrives to DELETE while status=`starting`
     if ptype is None:
-        ptype = 'httpp' # httpproxy
+        ptype = 'httpp'  # httpproxy
 
     while True:
         logger.debug('checking instance status...')
@@ -52,8 +52,7 @@ def start_httpproxy(user, instance_id, ptype=None):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == f'{instance_id}:{ptype}',
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:{ptype}',
                 )
                 .one_or_none()
             )
@@ -96,8 +95,7 @@ def start_httpproxy(user, instance_id, ptype=None):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == f'{instance_id}:{ptype}',
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:{ptype}',
                 )
                 .one()
             )
@@ -124,7 +122,9 @@ def start_httpproxy(user, instance_id, ptype=None):
                 if 'mistyproxy' in addons_config:
                     targetipaddr = addons_config['mistyproxy']['ip']
             except Exception as err:
-                logger.error(f'error parsing addons_config.mistyproxy: {type(err)}: {err}')
+                logger.error(
+                    f'error parsing addons_config.mistyproxy: {type(err)}: {err}'
+                )
                 return
 
     # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
@@ -149,7 +149,7 @@ def start_httpproxy(user, instance_id, ptype=None):
         '80',
         '--name',
         pid,
-        'rerobots-addons/mistyproxy', # TODO: other images for other ptype
+        'rerobots-addons/mistyproxy',  # TODO: other images for other ptype
         '-h',
         ptoken,
     ]
@@ -252,7 +252,7 @@ def stop_mistyproxy(user, instance_id):
 @capp.task
 def stop_httpproxy(user, instance_id, ptype=None):
     if ptype is None:
-        ptype = 'httpp' # httpproxy
+        ptype = 'httpp'  # httpproxy
 
     pid = f'{instance_id}__{ptype}'
     ihash = hashlib.sha256(bytes(instance_id, encoding='utf-8')).hexdigest()

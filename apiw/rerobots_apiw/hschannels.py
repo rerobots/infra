@@ -777,7 +777,7 @@ class ConnectionChannel:
                 }
                 outstanding_request = None
                 logger.info(
-                    'established new assocation with ' 'tunnel hub {}'.format(
+                    'established new assocation with tunnel hub {}'.format(
                         self.current_th['thid']
                     )
                 )

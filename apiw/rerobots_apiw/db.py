@@ -18,6 +18,7 @@ from .settings import DB_URL
 
 Base = declarative_base()
 
+
 def Timestamp():
     return DateTime(timezone=True)
 

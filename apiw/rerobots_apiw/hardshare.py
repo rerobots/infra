@@ -1120,7 +1120,7 @@ async def advertise_wdeployment(request):
                         )
                     else:
                         logger.warning(
-                            'received unexpected response message ' 'with ID {}'.format(
+                            'received unexpected response message with ID {}'.format(
                                 payload['mi']
                             )
                         )
@@ -1159,12 +1159,14 @@ async def advertise_wdeployment(request):
                                 'INIT_FAIL',
                             ]:
                                 logger.warning(
-                                    'received unknown status string' ' from client'
+                                    'received unknown status string from client'
                                 )
                             else:
                                 inst.status = payload['s']
-                                if inst.status == 'READY' and inst.ready_at is None:
-                                    inst.ready_at = now()
+                                if inst.status == 'READY':
+                                    if inst.ready_at is None:
+                                        inst.ready_at = now()
+
                                 if 'h' in payload:
                                     inst.hostkey = payload['h']
                                     logger.debug(
@@ -1173,6 +1175,7 @@ async def advertise_wdeployment(request):
                                             inst.hostkey, inst.status
                                         )
                                     )
+
                         if instance_id is not None:
                             eacommand.send_status(instance_id)
 
@@ -1304,12 +1307,11 @@ async def advertise_wdeployment(request):
                         )
                         if inst is None:
                             logger.warning(
-                                'received SSHTUN_DELETE' ' when there is no instance'
+                                'received SSHTUN_DELETE when there is no instance'
                             )
                         elif len(inst.associated_th) == 0:
                             logger.warning(
-                                'received SSHTUN_DELETE'
-                                ' when there is no associated hub'
+                                'received SSHTUN_DELETE when there is no associated hub'
                             )
                         else:
                             portaccess.send_to_thportal(
@@ -1332,15 +1334,13 @@ async def advertise_wdeployment(request):
 
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 logger.debug(
-                    'error message in WebSocket session ' 'for {}'.format(
-                        wd.deploymentid
-                    )
+                    'error message in WebSocket session for {}'.format(wd.deploymentid)
                 )
                 break
 
             else:
                 logger.debug(
-                    'unexpected message type {} in WebSocket session' ' for {}'.format(
+                    'unexpected message type {} in WebSocket session for {}'.format(
                         msg.type, wd.deploymentid
                     )
                 )

@@ -837,7 +837,7 @@ async def make_new_vpnclient(request):
         count += 1
         await asyncio.sleep(2)
     if blob is None or blob['result'] == b'NACK':
-        res_msg = {'result_message': ('This instance is busy.' ' Try again later.')}
+        res_msg = {'result_message': ('This instance is busy. Try again later.')}
         return web.Response(
             body=json.dumps(res_msg),
             status=503,  # Service Unavailable
@@ -888,8 +888,7 @@ def compute_queuelen(dbsession, wdeployment_id, get_current_rem=False):
         )
         if exp:
             remaining_duration = (
-                exp.target_duration
-                - (now() - current_instance.starttime).seconds
+                exp.target_duration - (now() - current_instance.starttime).seconds
             )
         else:
             remaining_duration = None

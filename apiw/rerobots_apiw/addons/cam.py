@@ -187,7 +187,7 @@ async def restart_cam_job(eacommand, user, instance_id, token):
         )
         if activeaddon is None:
             logger.warning(
-                'called when instance {} does ' 'not have cam add-on applied'.format(
+                'called when instance {} does not have cam add-on applied'.format(
                     instance_id
                 )
             )

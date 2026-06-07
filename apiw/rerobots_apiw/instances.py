@@ -618,8 +618,7 @@ async def request_instance(request):
                 )
 
         oldest_accepted_timestamp = datetime.fromtimestamp(
-            now().timestamp() - 60.0,
-            timezone.utc
+            now().timestamp() - 60.0, timezone.utc
         )
         matches = (
             request['dbsession']
@@ -755,7 +754,7 @@ async def request_instance(request):
     else:
         res_msg = {
             'result_message': (
-                'All matching workspace deployments are busy.' ' Try again later.'
+                'All matching workspace deployments are busy. Try again later.'
             )
         }
         return web.json_response(
