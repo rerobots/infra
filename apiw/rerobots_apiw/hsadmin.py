@@ -3,11 +3,16 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
+import logging
+
 from aiohttp import web
 
 from . import db as rrdb
 from .tasks import notify_hardshare_owners
 from .requestproc import process_headers
+
+
+logger = logging.getLogger(__name__)
 
 
 async def get_billing_plan(request):
@@ -22,10 +27,11 @@ async def get_billing_plan(request):
         )
     if ('username' in request.match_info) and not data['su']:
         return web.Response(status=404, headers=data['response_headers'])
-    elif 'username' in request.match_info:
-        username = request.match_info['username']
-    else:
-        username = data['user']
+    # TODO:
+    # elif 'username' in request.match_info:
+    #     username = request.match_info['username']
+    # else:
+    #     username = data['user']
 
     ubp = None  # TODO: port billing plan
     if ubp is None:
@@ -61,7 +67,9 @@ async def send_alert(request):
             )
             .one_or_none()
         )
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=404, headers=data['response_headers'])
     if usupp is None:
         return web.Response(status=404, headers=data['response_headers'])
@@ -123,7 +131,9 @@ async def manage_hook_emails(request):
             )
             .one_or_none()
         )
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=404, headers=data['response_headers'])
     if usupp is None:
         return web.Response(status=404, headers=data['response_headers'])

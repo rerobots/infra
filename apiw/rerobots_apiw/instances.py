@@ -14,6 +14,7 @@ import uuid
 
 from aiohttp import web
 import sqlalchemy
+from sqlalchemy import not_, null
 
 from .cap import accept_instantiate
 from .commands import compute_queuelen, get_wdinfo
@@ -64,7 +65,8 @@ async def get_instances_list(request):
                     'received negative max_per_page parameter to GET /instances'
                 )
                 max_per_page = 0
-        except:
+        except Exception as err:
+            logger.warning(f'max_per_page not valid; assuming `0`: {err}')
             max_per_page = 0
     else:
         max_per_page = 0
@@ -74,7 +76,8 @@ async def get_instances_list(request):
             if page < 1:
                 logger.warning('received non-positive page parameter to GET /instances')
                 page = 1
-        except:
+        except Exception as err:
+            logger.warning(f'page not valid; assuming `1`: {err}')
             page = 1
     else:
         page = 1
@@ -378,7 +381,8 @@ async def request_instance(request):
             return web.Response(status=404, headers=data['response_headers'])
         try:
             wdeployment_ids = [str(uuid.UUID(wd)) for wd in given['wds']]
-        except:
+        except Exception as err:
+            logger.warning(f'wds not valid: {err}')
             return web.Response(status=404, headers=data['response_headers'])
 
     if 'repo' in given:
@@ -494,7 +498,7 @@ async def request_instance(request):
             return web.json_response(
                 {'error': msg}, status=404, headers=data['response_headers']
             )
-        wds_query = wds_query.filter(rrdb.Deployment.date_dissolved == None)
+        wds_query = wds_query.filter(rrdb.Deployment.date_dissolved == null())
         if wds_query.count() < len(wdeployment_ids):
             if len(wdeployment_ids) == 1:
                 msg = 'workspace deployment is permanently unavailable'
@@ -627,9 +631,9 @@ async def request_instance(request):
             request['dbsession']
             .query(rrdb.Deployment)
             .filter(rrdb.Deployment.wtype == wtype)
-            .filter(rrdb.Deployment.date_dissolved == None)
-            .filter(rrdb.Deployment.locked_out == False)
-            .filter(rrdb.Deployment.last_heartbeat != None)
+            .filter(rrdb.Deployment.date_dissolved == null())
+            .filter(not_(rrdb.Deployment.locked_out))
+            .filter(rrdb.Deployment.last_heartbeat != null())
             .filter(rrdb.Deployment.last_heartbeat >= oldest_accepted_timestamp)
         )
         if matches.count() == 0:

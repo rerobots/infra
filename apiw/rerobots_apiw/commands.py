@@ -24,6 +24,7 @@ import aiocache
 from aiohttp import web
 import jwt
 import sqlalchemy
+from sqlalchemy import not_, null
 
 from . import db as rrdb
 from .cap import accept_instantiate
@@ -88,7 +89,7 @@ async def list_workspace_types(request):
         with_dissolved = False
     query = request['dbsession'].query(rrdb.Deployment.wtype)
     if not with_dissolved:
-        query = query.filter(rrdb.Deployment.date_dissolved == None)
+        query = query.filter(rrdb.Deployment.date_dissolved == null())
     return web.json_response(
         {'workspace_types': [wtype for (wtype,) in query.distinct()]},
         headers=data['response_headers'],
@@ -155,7 +156,8 @@ async def list_deployments(request):
                         'received negative maxlen parameter to GET /deployments'
                     )
                     maxlen = 0
-            except:
+            except Exception as err:
+                logger.warning(f'maxlen not valid; assuming `u`: {err}')
                 maxlen = 'u'
     else:
         maxlen = 'u'
@@ -168,7 +170,8 @@ async def list_deployments(request):
                     'received negative max_per_page parameter to GET /deployments'
                 )
                 max_per_page = 0
-        except:
+        except Exception as err:
+            logger.warning(f'max_per_page not valid; assuming `0`: {err}')
             max_per_page = 0
     else:
         max_per_page = 0
@@ -180,7 +183,8 @@ async def list_deployments(request):
                     'received non-positive page parameter to GET /deployments'
                 )
                 page = 1
-        except:
+        except Exception as err:
+            logger.warning(f'page not valid; assuming `1`: {err}')
             page = 1
     else:
         page = 1
@@ -197,7 +201,7 @@ async def list_deployments(request):
 
     query = request['dbsession'].query(rrdb.Deployment)
     if not with_dissolved:
-        query = query.filter(rrdb.Deployment.date_dissolved == None)
+        query = query.filter(rrdb.Deployment.date_dissolved == null())
     if len(types) > 0:
         base_query = query
         for ii, wtype in enumerate(types):
@@ -1047,7 +1051,7 @@ async def purge_tokens(request):
     for usertoken in (
         request['dbsession']
         .query(rrdb.APIToken)
-        .filter(rrdb.APIToken.user == data['user'], rrdb.APIToken.revoked == False)
+        .filter(rrdb.APIToken.user == data['user'], not_(rrdb.APIToken.revoked))
         .all()
     ):
         usertoken.revoked = True
@@ -1144,7 +1148,8 @@ async def get_queue_lengths(request):
             wdeployment_ids = [
                 str(uuid.UUID(wd)) for wd in request.query['wds'].split(',')
             ]
-        except:
+        except Exception as err:
+            logger.warning(f'wds not valid: {err}')
             return web.Response(status=404, headers=data['response_headers'])
     else:
         wdeployment_ids = None
@@ -1174,7 +1179,7 @@ async def get_queue_lengths(request):
         return web.json_response(
             {'error': msg}, status=404, headers=data['response_headers']
         )
-    wds_query = wds_query.filter(rrdb.Deployment.date_dissolved == None)
+    wds_query = wds_query.filter(rrdb.Deployment.date_dissolved == null())
     if wdeployment_ids is not None and wds_query.count() < len(wdeployment_ids):
         if len(wdeployment_ids) == 1:
             msg = 'workspace deployment is permanently unavailable'

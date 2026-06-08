@@ -74,7 +74,8 @@ async def get_orgs(request):
     if not data['su']:
         return web.Response(status=404, headers=data['response_headers'])
 
-    username = request.match_info['username']
+    # TODO:
+    # username = request.match_info['username']
 
     orgs = {}  # TODO: port org code
     return web.json_response(orgs, headers=data['response_headers'])

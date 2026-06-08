@@ -99,7 +99,7 @@ async def create_access_rule(request):
         given = await request.json()
     else:
         given = None
-    if given is None or not ('cap' in given):
+    if given is None or 'cap' not in given:
         return web.json_response(
             {'error_message': 'post body required, but not given'},
             status=400,

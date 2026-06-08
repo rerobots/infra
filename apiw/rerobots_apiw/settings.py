@@ -107,7 +107,7 @@ else:
     try:
         with open(os.path.join(BASE_DIR, 'etc', 'webui-secret.key')) as fp:
             WEBUI_SECRET_KEY = fp.read()
-    except:
+    except FileNotFoundError:
         WEBUI_SECRET_KEY = None
 
 if DEBUG or RUNTIME_ENVIRON.startswith('staging'):

@@ -6,6 +6,7 @@ Copyright (C) 2017, 2018 rerobots, Inc.
 """
 
 from contextlib import contextmanager
+import logging
 
 import sqlalchemy
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
@@ -14,6 +15,9 @@ from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Foreign
 
 from .util import now
 from .settings import DB_URL
+
+
+logger = logging.getLogger(__name__)
 
 
 Base = declarative_base()
@@ -295,7 +299,8 @@ def create_session_context():
     try:
         yield session
         session.commit()
-    except:
+    except Exception as err:
+        logger.warning(f'db commit failed: {err}')
         session.rollback()
         raise
     finally:

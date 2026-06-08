@@ -14,6 +14,7 @@ import uuid
 import aiohttp
 from aiohttp import web
 import sqlalchemy
+from sqlalchemy import null
 
 from . import db as rrdb
 from .requestproc import process_headers
@@ -327,7 +328,7 @@ async def list_my_wdeployments(request):
         .filter(rrdb.Deployment.deploymentid == rrdb.UserProvidedSupp.deploymentid)
     )
     if not with_dissolved:
-        query = query.filter(rrdb.Deployment.date_dissolved == None)
+        query = query.filter(rrdb.Deployment.date_dissolved == null())
     wds = [
         {
             'id': row[0].deploymentid,
@@ -408,7 +409,7 @@ async def admin_list_wdeployments(request):
     )
     query = query.filter(rrdb.UserProvidedSupp.owner == request.match_info['owner'])
     if not with_dissolved:
-        query = query.filter(rrdb.Deployment.date_dissolved == None)
+        query = query.filter(rrdb.Deployment.date_dissolved == null())
     wds = [row[1].deploymentid for row in query]
     return web.json_response({'wdeployments': wds}, headers=data['response_headers'])
 
@@ -454,7 +455,8 @@ async def instances_on_mine(request):
                     'received negative max_per_page parameter to GET /instances'
                 )
                 max_per_page = 0
-        except:
+        except Exception as err:
+            logger.warning(f'max_per_page not valid; assuming `0`: {err}')
             max_per_page = 0
     else:
         max_per_page = 0
@@ -464,7 +466,8 @@ async def instances_on_mine(request):
             if page < 1:
                 logger.warning('received non-positive page parameter to GET /instances')
                 page = 1
-        except:
+        except Exception as err:
+            logger.warning(f'page not valid; assuming `1`: {err}')
             page = 1
     else:
         page = 1
@@ -812,7 +815,9 @@ async def check_wdeployment_data(request):
             .filter(rrdb.Deployment.deploymentid == usupp.deploymentid)
             .one()
         )
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=404, headers=data['response_headers'])
     payload = {
         'id': wd.deploymentid,
@@ -858,7 +863,9 @@ async def dissolve_wdeployment(request):
             .filter(rrdb.Deployment.deploymentid == usupp.deploymentid)
             .one()
         )
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=404, headers=data['response_headers'])
     if wd.date_dissolved is not None:
         return web.json_response(
@@ -967,7 +974,9 @@ async def advertise_wdeployment(request):
             .filter(rrdb.Deployment.deploymentid == usupp.deploymentid)
             .one()
         )
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=404, headers=data['response_headers'])
 
     if wd.date_dissolved is not None:
@@ -1041,8 +1050,8 @@ async def advertise_wdeployment(request):
                     payload = json.loads(msg.data)
                     assert 'v' in payload and payload['v'] == 0
                     assert 'cmd' in payload
-                except:
-                    print('ERROR: failed to parse message payload.')
+                except Exception as err:
+                    logger.error(f'failed to parse message payload: {err}')
                     await ws.close()
                     break
 
@@ -1144,7 +1153,9 @@ async def advertise_wdeployment(request):
                                     .one()
                                 )
                                 instance_id = inst.instanceid
-                            except:
+                            except Exception as err:
+                                # TODO: more detail in logging
+                                logger.warning(f'{err}')
                                 inst = None
                                 instance_id = None
                             if inst is None:
@@ -1260,12 +1271,10 @@ async def advertise_wdeployment(request):
                             )
                             .one()
                         )
-                    except:
+                    except Exception as err:
                         inst = None
                         logger.warning(
-                            'received TH_SEARCH from wdeployment {} that does not have instance yet. (current_instance_id: {})'.format(
-                                wd.deploymentid, eacommand.current_instance_id
-                            )
+                            f'received TH_SEARCH from wdeployment {wd.deploymentid} that does not have instance yet. (current_instance_id: {eacommand.current_instance_id}): {err}'
                         )
 
                     if inst is not None:
@@ -1390,7 +1399,9 @@ async def update_wdeployment(request):
             )
             .one_or_none()
         )
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=404, headers=data['response_headers'])
     if usupp is None:
         return web.Response(status=404, headers=data['response_headers'])
@@ -1413,7 +1424,9 @@ async def update_wdeployment(request):
             if k == 'mistyproxy':
                 assert len(given['addons_config']['mistyproxy']) == 1
                 assert 'ip' in given['addons_config']['mistyproxy']
-    except:
+    except Exception as err:
+        # TODO: more detail in logging
+        logger.warning(f'{err}')
         return web.Response(status=400, headers=data['response_headers'])
 
     tasks.update_user_provided.delay(

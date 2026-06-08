@@ -652,7 +652,8 @@ async def newshell(request):
             if not should_handle:
                 return web.Response(status=403, headers=data['response_headers'])
 
-        except:
+        except Exception as err:
+            logger.info(f'wrong auth token: {err}')
             return web.json_response(
                 {'error_message': 'wrong authorization token'}, status=400
             )

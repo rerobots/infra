@@ -34,7 +34,8 @@ def geo_lookup(addr):
         reader = geoip2.database.Reader('/usr/share/GeoIP/GeoLite2-City.mmdb')
         c = reader.city(addr)
         georegion = '{}, {}'.format(c.city.names['en'], c.country.names['en'])
-    except:
+    except Exception as err:
+        logger.info(f'unable to geo-locate address: {err}')
         georegion = None
     return georegion
 
@@ -139,7 +140,7 @@ def process_headers(request, token=None):
         if data['payload'] is not None:
             data['user'] = data['payload']['user']
             data['org'] = data['payload']['org']
-            if 'su' in data['payload'] and data['payload']['su'] == True:
+            if 'su' in data['payload'] and data['payload']['su']:
                 data['su'] = True
             else:
                 data['su'] = False

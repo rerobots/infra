@@ -117,7 +117,8 @@ class CommandChannel:
         try:
             if not self._conn.is_open:
                 return False
-        except:
+        except Exception as err:
+            logger.info(f'{err}')
             return False
         if self.channel is None:
             return False
@@ -167,12 +168,14 @@ class CommandChannel:
             return
         try:
             v = self.expected_resp.pop(msg['mi'])
-        except:
+        except Exception as err:
             for k in ['mi', 'cmd']:
                 if len(msg[k]) > 64:
                     msg[k] = msg[k][:64]
             logger.warning(
-                'unexpected response message {} (id: {})'.format(msg['cmd'], msg['mi'])
+                'unexpected response message {} (id: {}): {}'.format(
+                    msg['cmd'], msg['mi'], err
+                )
             )
             return
         if v['cmd'] == 'INSTANCE_LAUNCH':
@@ -509,7 +512,8 @@ class ConnectionChannel:
         try:
             if not self._conn.is_open:
                 return False
-        except:
+        except Exception as err:
+            logger.info(f'{err}')
             return False
         if self.channel is None:
             return False
@@ -558,12 +562,14 @@ class ConnectionChannel:
             return
         try:
             v = self.expected_resp.pop(msg['mi'])
-        except:
+        except Exception as err:
             for k in ['mi', 'cmd']:
                 if len(msg[k]) > 64:
                     msg[k] = msg[k][:64]
             logger.warning(
-                'unexpected response message {} (id: {})'.format(msg['cmd'], msg['mi'])
+                'unexpected response message {} (id: {}): {}'.format(
+                    msg['cmd'], msg['mi'], err
+                )
             )
             return
 

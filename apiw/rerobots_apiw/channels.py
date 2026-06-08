@@ -117,7 +117,8 @@ class EACommandChannel:
         try:
             if not self._conn.is_open:
                 return False
-        except:
+        except Exception as err:
+            logger.info(f'{err}')
             return False
         if self.channel is None:
             return False

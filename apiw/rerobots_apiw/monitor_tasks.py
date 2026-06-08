@@ -5,6 +5,7 @@ Copyright (C) 2022 rerobots, Inc.
 from datetime import timedelta
 
 from celery.utils.log import get_task_logger
+from sqlalchemy import null
 
 from . import db as rrdb
 from .celery import app as capp
@@ -20,7 +21,7 @@ logger = get_task_logger(__name__)
 def check_heartbeats():
     with rrdb.create_session_context() as session:
         for rule in session.query(rrdb.WDMonitorHeartbeat).filter(
-            rrdb.WDMonitorHeartbeat.alert_sent == None
+            rrdb.WDMonitorHeartbeat.alert_sent == null()
         ):
             wd = (
                 session.query(rrdb.Deployment)

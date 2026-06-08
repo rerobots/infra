@@ -1022,8 +1022,10 @@ def notify_user(event_url, payload):
                 subject='notification from rerobots',
                 body=json.dumps(payload, indent=2, sort_keys=True),
             )
-        except:
-            logger.error('exception while attempting to send notification email')
+        except Exception as err:
+            logger.error(
+                f'exception while attempting to send notification email: {err}'
+            )
 
     else:
         logger.warning('unrecognized event URL: {}'.format(event_url))

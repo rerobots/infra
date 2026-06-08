@@ -466,7 +466,8 @@ async def drive_rx_commands(request):
             key=WEBUI_PUBLIC_KEY,
             algorithms=['RS256'],
         )
-    except:
+    except Exception as err:
+        logger.info(f'wrong auth token: {err}')
         return web.Response(
             body=json.dumps({'error_message': 'wrong authorization token'}),
             status=400,

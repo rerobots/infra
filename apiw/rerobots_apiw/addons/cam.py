@@ -76,8 +76,8 @@ async def addon_cam_snapshot(request):
         camera_id = int(camera_id)
         assert camera_id in [0, 1, 2, 3]  # TODO: check against addons_config
         camera_id = str(camera_id)
-    except:
-        logger.error('received bad camera id')
+    except Exception as err:
+        logger.error(f'received bad camera id: {err}')
         return web.Response(
             body=json.dumps({'error_message': 'not valid camera identifier'}),
             status=400,
@@ -212,8 +212,8 @@ async def restart_cam_job(eacommand, user, instance_id, token):
         )
         try:
             cam = json.loads(wdeployment.addons_config)['cam']
-        except:
-            logger.error('error parsing addons_config.cam')
+        except Exception as err:
+            logger.error(f'error parsing addons_config.cam: {err}')
             return
 
     red = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
@@ -438,8 +438,8 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
         )
         try:
             cam = json.loads(wdeployment.addons_config)['cam']
-        except:
-            logger.error('error parsing addons_config.cam')
+        except Exception as err:
+            logger.error(f'error parsing addons_config.cam: {err}')
             return
 
     if wdeployment_id in [
@@ -941,7 +941,8 @@ async def addon_cam_upload(request):
             key=settings.WEBUI_PUBLIC_KEY,
             algorithms=['RS256'],
         )
-    except:
+    except Exception as err:
+        logger.info(f'wrong auth token: {err}')
         return web.Response(
             body=json.dumps({'error_message': 'wrong authorization token'}),
             status=400,
@@ -953,8 +954,8 @@ async def addon_cam_upload(request):
         camera_id = int(camera_id)
         assert camera_id in [0, 1, 2, 3]  # TODO: check against addons_config
         camera_id = str(camera_id)
-    except:
-        logger.error('received bad camera id')
+    except Exception as err:
+        logger.error(f'received bad camera id: {err}')
         return web.Response(
             body=json.dumps({'error_message': 'not valid camera identifier'}),
             status=400,
@@ -1060,7 +1061,8 @@ async def addon_cam_stream(request):
             key=settings.WEBUI_PUBLIC_KEY,
             algorithms=['RS256'],
         )
-    except:
+    except Exception as err:
+        logger.info(f'wrong auth token: {err}')
         return web.Response(
             body=json.dumps({'error_message': 'wrong authorization token'}),
             status=400,
@@ -1072,8 +1074,8 @@ async def addon_cam_stream(request):
         camera_id = int(camera_id)
         assert camera_id in [0, 1, 2, 3]  # TODO: check against addons_config
         camera_id = str(camera_id)
-    except:
-        logger.error('received bad camera id')
+    except Exception as err:
+        logger.error(f'received bad camera id: {err}')
         return web.Response(
             body=json.dumps({'error_message': 'not valid camera identifier'}),
             status=400,
