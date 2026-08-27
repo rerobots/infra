@@ -127,7 +127,7 @@ async def cleanup_terminated_instance(instance_id):
                         'status': config['status'],
                     }
                 )
-            elif ':cmdsh' in row.instanceid_with_addon:
+            elif row.instanceid_with_addon.endswith(':cmdsh'):
                 addons_to_deactivate.append(
                     {
                         'addon': 'cmdsh',
