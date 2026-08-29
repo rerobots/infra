@@ -91,8 +91,11 @@ else:
 
 # SECURITY WARNING: keep this MailGun API key secret in production!
 # cf. https://app.mailgun.com/app/domains/mg.rerobots.net
-with open(os.path.join(BASE_DIR, 'etc', 'mailgun-secret.key')) as fp:
-    MAILGUN_API_KEY = fp.read()
+if 'REROBOTS_MAILGUN_API_KEY' in os.environ:
+    MAILGUN_API_KEY = os.environ['REROBOTS_MAILGUN_API_KEY']
+else:
+    with open(os.path.join(BASE_DIR, 'etc', 'mailgun-secret.key')) as fp:
+        MAILGUN_API_KEY = fp.read()
 
 if 'REROBOTS_WEBUI_PUBLIC_KEY' in os.environ:
     WEBUI_PUBLIC_KEY = os.environ['REROBOTS_WEBUI_PUBLIC_KEY']
