@@ -12,7 +12,6 @@ import time
 from aiohttp import web
 
 from .tasks import do_periodic
-from .wsgi import application
 from . import __version__
 
 
@@ -80,6 +79,7 @@ def main_cli(argv=None):
                 pass
 
     else:
+        from .wsgi import application
         web.run_app(application, host=args.host, port=args.port)
 
     return 0
