@@ -66,9 +66,6 @@ def main_cli(argv=None):
 
     if args.verbose:
         os.environ['PYTHONASYNCIODEBUG'] = '1'
-        logging.basicConfig(
-            level=logging.DEBUG, filename='rerobots_apiw.log', filemode='w'
-        )
         rootlogger = logging.getLogger()
         rootlogger.addHandler(logging.StreamHandler())
 
