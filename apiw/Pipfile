@@ -12,6 +12,7 @@ pytest-aiohttp = "*"
 pyflakes = "*"
 rerobots-apiw = {editable = true, path = "."}
 ruff = "*"
+mypy = "*"
 
 [requires]
 python_version = "3.12"
