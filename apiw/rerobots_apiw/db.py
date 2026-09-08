@@ -9,7 +9,7 @@ from contextlib import contextmanager
 import logging
 
 import sqlalchemy
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker
 from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 
@@ -20,7 +20,8 @@ from .settings import DB_URL
 logger = logging.getLogger(__name__)
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 def Timestamp():
