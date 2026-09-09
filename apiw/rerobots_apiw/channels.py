@@ -8,6 +8,8 @@ import json
 import logging
 import time
 
+from typing import Any
+
 import pika
 import pika.adapters.asyncio_connection
 import redis
@@ -17,6 +19,8 @@ from . import db as rrdb
 from . import tasks, tunnel_hub_tasks
 from . import settings
 
+
+RerobotsChannel: Any  # TODO: narrow type
 if settings.DEBUG:
     from rerobots_infra import RerobotsQChannel as RerobotsChannel
 else:

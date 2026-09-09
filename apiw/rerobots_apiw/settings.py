@@ -104,6 +104,7 @@ else:
         WEBUI_PUBLIC_KEY = fp.read()
 
 # SECURITY WARNING: keep this private key secret in production!
+WEBUI_SECRET_KEY: str | None
 if 'REROBOTS_WEBUI_SECRET_KEY' in os.environ:
     WEBUI_SECRET_KEY = os.environ['REROBOTS_WEBUI_SECRET_KEY']
 else:
@@ -124,7 +125,7 @@ with open(os.path.join(BASE_DIR, 'etc', 'slack-webhooks')) as fp:
     SLACK_WEBHOOKS = json.loads(fp.read())
 
 # Emails for administrative notifications
-ADMINS = []
+ADMINS: list[str] = []
 
 
 if DEBUG or RUNTIME_ENVIRON.startswith('staging'):
