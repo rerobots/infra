@@ -115,7 +115,8 @@ class RerobotsLogger:
         try:
             if not self._conn.is_open:
                 return False
-        except:
+        except Exception as err:
+            logger.info(f'{err}')
             return False
         if self.channel is None:
             return False
@@ -141,8 +142,8 @@ class RerobotsLogger:
             }
             with db.create_session_context() as session:
                 session.add(db.Log(**args))
-        except:
-            logger.error('failure to save remote log message: {}'.format(body))
+        except Exception as err:
+            logger.error(f'exception {err}; failure to save remote log message: {body}')
             return
         try:
             args['timestamp_from_agent'] = ts_from_agent.isoformat()
@@ -153,7 +154,7 @@ class RerobotsLogger:
                 logger.error(
                     'response to uri: {}: {}'.format(res.status_code, res.text)
                 )
-        except:
+        except Exception as err:
             logger.error(
-                'exception caught while trying to post new rra log entry to Elasticsearch cluster'
+                f'exception while trying to post new rra log entry to Elasticsearch cluster: {err}'
             )
