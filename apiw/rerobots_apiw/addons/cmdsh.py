@@ -93,18 +93,6 @@ async def apply_addon(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            wdeployment.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = '0'
 
@@ -222,18 +210,6 @@ async def get_status(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            instance.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = '0'
 
@@ -326,18 +302,6 @@ async def remove(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            instance.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = None
 
@@ -429,18 +393,6 @@ async def attach_sh(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            instance.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = '0'
 
@@ -568,18 +520,6 @@ async def attach_main(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            instance.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = '0'
 
@@ -715,18 +655,6 @@ async def newshell(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            instance.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = '0'
 
@@ -843,71 +771,32 @@ async def stop_job(user, instance_id, host_id=None, eacommand=None):
             if addon_config['hstatus'][hid] != 'active':
                 continue
 
-            if wdeployment_id in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                'f74470ba-e486-474c-aceb-050ac2d82ef9',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]:
-                argv = ['pkill', '-f', 'cmdshr']
-                msg_id = str(uuid.uuid4())
-                eacommand.send_to_wd(
-                    wdeployment_id,
-                    {
-                        'command': 'EXEC INSIDE',
-                        'iid': instance_id,
-                        'hid': hid,
-                        'did': wdeployment_id,
-                        'message_id': msg_id,
-                        'argv': argv,
-                    },
-                )
-                max_tries = 30
-                count = 0
-                while (count < max_tries) and (not red.exists(msg_id)):
-                    count += 1
-                    await asyncio.sleep(1)
-                blob = red.get(msg_id)
-                if blob is None or blob == b'NACK':
-                    logger.warning(
-                        'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(
-                            argv
-                        )
-                    )
-                    return
-
-        else:
-            # NOTE: host_id != 0 is not implemented for the case of SSH-based add-on management, which is deprecated anyway.
-            # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
-            # provide key text via stdin of child process.
-            tmp_fd, privatekey_path = tempfile.mkstemp()
-            privatekey_file = os.fdopen(tmp_fd, 'w')
-            privatekey_file.write(ssh_privatekey)
-            privatekey_file.close()
-
-            kill_cmd = [
-                'ssh',
-                '-T',
-                '-o',
-                'UserKnownHostsFile=/dev/null',
-                '-o',
-                'StrictHostKeyChecking=no',
-                '-i',
-                privatekey_path,
-                '-p',
-                str(port),
-                '{}@{}'.format(addon_config['user'], ipv4),
-                'pkill',
-                '-f',
-                'cmdshr',
-            ]
-            logger.info('exec: {}'.format(kill_cmd))
-            kill_p = await create_subprocess_exec(*kill_cmd)
-            rc = await kill_p.wait()
-            os.unlink(privatekey_path)
-            if rc != 0:
+            argv = ['pkill', '-f', 'cmdshr']
+            msg_id = str(uuid.uuid4())
+            eacommand.send_to_wd(
+                wdeployment_id,
+                {
+                    'command': 'EXEC INSIDE',
+                    'iid': instance_id,
+                    'hid': hid,
+                    'did': wdeployment_id,
+                    'message_id': msg_id,
+                    'argv': argv,
+                },
+            )
+            max_tries = 30
+            count = 0
+            while (count < max_tries) and (not red.exists(msg_id)):
+                count += 1
+                await asyncio.sleep(1)
+            blob = red.get(msg_id)
+            if blob is None or blob == b'NACK':
                 logger.warning(
-                    f'on instance {instance_id}, command exitcode {rc}: {" ".join(kill_cmd)}'
+                    'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(
+                        argv
+                    )
                 )
+                return
 
     if host_id is None:
         with rrdb.create_session_context() as session:
@@ -999,18 +888,6 @@ async def send_file(request):
     if 'hid' in request.match_info:
         host_id = request.match_info['hid']
         # TODO: determine valid range via wdeployment configuration from database
-        if host_id != '0' and (
-            instance.deploymentid
-            not in [
-                '5e9de205-2208-4022-8bd6-b104b740c270',
-                '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-            ]
-        ):
-            return web.json_response(
-                {'error_message': 'not valid host ID'},
-                status=400,
-                headers=data['response_headers'],
-            )
     else:
         host_id = '0'
 
@@ -1018,96 +895,32 @@ async def send_file(request):
 
     red = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
 
-    if instance.deploymentid in [
-        '5e9de205-2208-4022-8bd6-b104b740c270',
-        'f74470ba-e486-474c-aceb-050ac2d82ef9',
-        '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-    ]:
-        msg_id = str(uuid.uuid4())
-        request.app['eacommand'].send_to_wd(
-            instance.deploymentid,
-            {
-                'command': 'PUT FILE',
-                'iid': instance.instanceid,
-                'hid': host_id,
-                'did': instance.deploymentid,
-                'message_id': msg_id,
-                'path': given['path'],
-                'content': given['data'],
-                'b64': b64_encoded,
-            },
+    msg_id = str(uuid.uuid4())
+    request.app['eacommand'].send_to_wd(
+        instance.deploymentid,
+        {
+            'command': 'PUT FILE',
+            'iid': instance.instanceid,
+            'hid': host_id,
+            'did': instance.deploymentid,
+            'message_id': msg_id,
+            'path': given['path'],
+            'content': given['data'],
+            'b64': b64_encoded,
+        },
+    )
+    max_tries = 30
+    count = 0
+    while (count < max_tries) and (not red.exists(msg_id)):
+        count += 1
+        await asyncio.sleep(1)
+    blob = red.get(msg_id)
+    if blob is None or blob == b'NACK':
+        logger.warning(
+            'no ACK of `PUT FILE` from workspace deployment {}'.format(
+                instance.deploymentid
+            )
         )
-        max_tries = 30
-        count = 0
-        while (count < max_tries) and (not red.exists(msg_id)):
-            count += 1
-            await asyncio.sleep(1)
-        blob = red.get(msg_id)
-        if blob is None or blob == b'NACK':
-            logger.warning(
-                'no ACK of `PUT FILE` from workspace deployment {}'.format(
-                    instance.deploymentid
-                )
-            )
-            return
-
-    else:
-        ssh_privatekey = str(instance.ssh_privatekey)
-        ipv4 = instance.listening_ipaddr
-        port = instance.listening_port
-
-        # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
-        # provide key text via stdin of child process.
-        tmp_fd, privatekey_path = tempfile.mkstemp()
-        privatekey_file = os.fdopen(tmp_fd, 'w')
-        privatekey_file.write(ssh_privatekey)
-        privatekey_file.close()
-
-        if b64_encoded:
-            try:
-                given_data = base64.b64decode(given['data'])
-            except Exception as err:
-                logger.warning('caught {}: {}'.format(type(err), err))
-                return web.Response(
-                    status=400,
-                    content_type='application/json',
-                    headers=data['response_headers'],
-                )
-            tmp_fd, tmp_path = tempfile.mkstemp()
-            tmp_file = os.fdopen(tmp_fd, 'wb')
-            tmp_file.write(given_data)
-            tmp_file.close()
-        else:
-            tmp_fd, tmp_path = tempfile.mkstemp()
-            tmp_file = os.fdopen(tmp_fd, 'wt')
-            tmp_file.write(given['data'])
-            tmp_file.close()
-
-        # TODO: run these processes in a Docker container? mainly intended as security
-        scp_cmd_prefix = [
-            'scp',
-            '-o',
-            'UserKnownHostsFile=/dev/null',
-            '-o',
-            'StrictHostKeyChecking=no',
-            '-i',
-            privatekey_path,
-            '-P',
-            str(port),
-        ]
-        scp_cmd = scp_cmd_prefix + [
-            tmp_path,
-            '{}@{}:{}'.format(addon_config['user'], ipv4, given['path']),
-        ]
-        logger.info('exec: {}'.format(scp_cmd))
-        scp_p = await create_subprocess_exec(*scp_cmd)
-        rc = await scp_p.wait()
-        if rc != 0:
-            logger.warning(
-                'returncode of subprocess `{}` is {}'.format(' '.join(scp_cmd), rc)
-            )
-
-        os.unlink(privatekey_path)
-        os.unlink(tmp_path)
+        return
 
     return web.json_response({'success': True})

@@ -218,43 +218,70 @@ async def restart_cam_job(eacommand, user, instance_id, token):
 
     red = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
 
-    if wdeployment_id in [
-        '5e9de205-2208-4022-8bd6-b104b740c270',
-        'f74470ba-e486-474c-aceb-050ac2d82ef9',
-        '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-    ]:
-        msg_id = str(uuid.uuid4())
-        eacommand.send_to_wd(
-            wdeployment_id,
-            {
-                'command': 'PUT FILE',
-                'iid': instance_id,
-                'did': wdeployment_id,
-                'message_id': msg_id,
-                'path': '/root/jwt.txt',
-                'content': token,
-            },
-        )
-        max_tries = 30
-        count = 0
-        while (count < max_tries) and (not red.exists(msg_id)):
-            count += 1
-            await asyncio.sleep(1)
-        blob = red.get(msg_id)
-        if blob is None or blob == b'NACK':
-            logger.warning('no ACK of `PUT FILE` jwt.txt from workspace deployment')
-            return
+    msg_id = str(uuid.uuid4())
+    eacommand.send_to_wd(
+        wdeployment_id,
+        {
+            'command': 'PUT FILE',
+            'iid': instance_id,
+            'did': wdeployment_id,
+            'message_id': msg_id,
+            'path': '/root/jwt.txt',
+            'content': token,
+        },
+    )
+    max_tries = 30
+    count = 0
+    while (count < max_tries) and (not red.exists(msg_id)):
+        count += 1
+        await asyncio.sleep(1)
+    blob = red.get(msg_id)
+    if blob is None or blob == b'NACK':
+        logger.warning('no ACK of `PUT FILE` jwt.txt from workspace deployment')
+        return
 
+    msg_id = str(uuid.uuid4())
+    eacommand.send_to_wd(
+        wdeployment_id,
+        {
+            'command': 'PUT FILE',
+            'iid': instance_id,
+            'did': wdeployment_id,
+            'message_id': msg_id,
+            'path': '/root/camerasend.py',
+            'content': open('addons/cam/camerasend.py', 'rt').read(),
+        },
+    )
+    max_tries = 30
+    count = 0
+    while (count < max_tries) and (not red.exists(msg_id)):
+        count += 1
+        await asyncio.sleep(1)
+    blob = red.get(msg_id)
+    if blob is None or blob == b'NACK':
+        logger.warning(
+            'no ACK of `PUT FILE` camerasend.py from workspace deployment'
+        )
+        return
+
+    for k, v in cam.items():
+        argv = ['python3', 'camerasend.py', instance_id, 'jwt.txt', str(k)]
+        if 'rotate' in v:
+            argv.append(v['rotate'])
+        if 'w' in v and 'h' in v:
+            if 'rotate' not in v:
+                argv.append("0")
+            argv.append(v['w'])
+            argv.append(v['h'])
         msg_id = str(uuid.uuid4())
         eacommand.send_to_wd(
             wdeployment_id,
             {
-                'command': 'PUT FILE',
+                'command': 'EXEC INSIDE',
                 'iid': instance_id,
                 'did': wdeployment_id,
                 'message_id': msg_id,
-                'path': '/root/camerasend.py',
-                'content': open('addons/cam/camerasend.py', 'rt').read(),
+                'argv': argv,
             },
         )
         max_tries = 30
@@ -265,129 +292,9 @@ async def restart_cam_job(eacommand, user, instance_id, token):
         blob = red.get(msg_id)
         if blob is None or blob == b'NACK':
             logger.warning(
-                'no ACK of `PUT FILE` camerasend.py from workspace deployment'
+                'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
             )
             return
-
-    else:
-        # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
-        # provide key text via stdin of child process.
-        tmp_fd, privatekey_path = tempfile.mkstemp()
-        privatekey_file = os.fdopen(tmp_fd, 'w')
-        privatekey_file.write(ssh_privatekey)
-        privatekey_file.close()
-
-        tmp_fd, tmp_token_path = tempfile.mkstemp()
-        tmp_token_file = os.fdopen(tmp_fd, 'w')
-        tmp_token_file.write(token)
-        tmp_token_file.close()
-
-        # TODO: run these processes in a Docker container? mainly intended as security
-        scp_cmd_prefix = [
-            'scp',
-            '-o',
-            'UserKnownHostsFile=/dev/null',
-            '-o',
-            'StrictHostKeyChecking=no',
-            '-i',
-            privatekey_path,
-            '-P',
-            str(port),
-        ]
-        scp_token_cmd = scp_cmd_prefix + [
-            tmp_token_path,
-            '{}@{}:~/jwt.txt'.format(addon_config['user'], ipv4),
-        ]
-        scp_up_cmd = scp_cmd_prefix + [
-            'addons/cam/camerasend.py',
-            '{}@{}:~/'.format(addon_config['user'], ipv4),
-        ]
-        for scp_cmd in [scp_token_cmd, scp_up_cmd]:
-            logger.info('run: {}'.format(scp_cmd))
-            scp_p = await create_subprocess_exec(*scp_cmd)
-            rc = await scp_p.wait()
-            if rc != 0:
-                logger.warning(
-                    'returncode of subprocess `{}` is {}'.format(' '.join(scp_cmd), rc)
-                )
-
-    if wdeployment_id in [
-        '5e9de205-2208-4022-8bd6-b104b740c270',
-        'f74470ba-e486-474c-aceb-050ac2d82ef9',
-        '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-    ]:
-        for k, v in cam.items():
-            argv = ['python3', 'camerasend.py', instance_id, 'jwt.txt', str(k)]
-            if 'rotate' in v:
-                argv.append(v['rotate'])
-            if 'w' in v and 'h' in v:
-                if 'rotate' not in v:
-                    argv.append("0")
-                argv.append(v['w'])
-                argv.append(v['h'])
-            msg_id = str(uuid.uuid4())
-            eacommand.send_to_wd(
-                wdeployment_id,
-                {
-                    'command': 'EXEC INSIDE',
-                    'iid': instance_id,
-                    'did': wdeployment_id,
-                    'message_id': msg_id,
-                    'argv': argv,
-                },
-            )
-            max_tries = 30
-            count = 0
-            while (count < max_tries) and (not red.exists(msg_id)):
-                count += 1
-                await asyncio.sleep(1)
-            blob = red.get(msg_id)
-            if blob is None or blob == b'NACK':
-                logger.warning(
-                    'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-                )
-                return
-
-    else:
-        camerasend_cmd_prefix = [
-            'ssh',
-            '-T',
-            '-o',
-            'UserKnownHostsFile=/dev/null',
-            '-o',
-            'StrictHostKeyChecking=no',
-            '-i',
-            privatekey_path,
-            '-p',
-            str(port),
-            '{}@{}'.format(addon_config['user'], ipv4),
-        ]
-        camerasend_cmds = []
-        for k, v in cam.items():
-            camerasend_cmds.append(
-                camerasend_cmd_prefix
-                + ['python3', 'camerasend.py', instance_id, 'jwt.txt', str(k)]
-            )
-            if 'rotate' in v:
-                camerasend_cmds[-1].append(v['rotate'])
-            if 'w' in v and 'h' in v:
-                if 'rotate' not in v:
-                    camerasend_cmds[-1].append("0")
-                camerasend_cmds[-1].append(v['w'])
-                camerasend_cmds[-1].append(v['h'])
-        for camerasend_cmd in camerasend_cmds:
-            logger.info('run: {}'.format(camerasend_cmd))
-            camerasend_p = await create_subprocess_exec(*camerasend_cmd)
-            rc = await camerasend_p.wait()
-            if rc != 0:
-                logger.warning(
-                    'returncode of subprocess `{}` is {}'.format(
-                        ' '.join(camerasend_cmd), rc
-                    )
-                )
-
-        os.unlink(privatekey_path)
-        os.unlink(tmp_token_path)
 
 
 async def addon_cam_start_job(eacommand, user, instance_id, token):
@@ -442,98 +349,51 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
             logger.error(f'error parsing addons_config.cam: {err}')
             return
 
-    if wdeployment_id in [
-        '5e9de205-2208-4022-8bd6-b104b740c270',
-        'f74470ba-e486-474c-aceb-050ac2d82ef9',
-        '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-    ]:
-        msg_id = str(uuid.uuid4())
-        eacommand.send_to_wd(
-            wdeployment_id,
-            {
-                'command': 'PUT FILE',
-                'iid': instance_id,
-                'did': wdeployment_id,
-                'message_id': msg_id,
-                'path': '/root/jwt.txt',
-                'content': token,
-            },
+    msg_id = str(uuid.uuid4())
+    eacommand.send_to_wd(
+        wdeployment_id,
+        {
+            'command': 'PUT FILE',
+            'iid': instance_id,
+            'did': wdeployment_id,
+            'message_id': msg_id,
+            'path': '/root/jwt.txt',
+            'content': token,
+        },
+    )
+    max_tries = 30
+    count = 0
+    while (count < max_tries) and (not red.exists(msg_id)):
+        count += 1
+        await asyncio.sleep(1)
+    blob = red.get(msg_id)
+    if blob is None or blob == b'NACK':
+        logger.warning('no ACK of `PUT FILE` jwt.txt from workspace deployment')
+        return
+
+    msg_id = str(uuid.uuid4())
+    eacommand.send_to_wd(
+        wdeployment_id,
+        {
+            'command': 'PUT FILE',
+            'iid': instance_id,
+            'did': wdeployment_id,
+            'message_id': msg_id,
+            'path': '/root/camerasend.py',
+            'content': open('addons/cam/camerasend.py', 'rt').read(),
+        },
+    )
+    max_tries = 30
+    count = 0
+    while (count < max_tries) and (not red.exists(msg_id)):
+        count += 1
+        await asyncio.sleep(1)
+    blob = red.get(msg_id)
+    if blob is None or blob == b'NACK':
+        logger.warning(
+            'no ACK of `PUT FILE` camerasend.py from workspace deployment'
         )
-        max_tries = 30
-        count = 0
-        while (count < max_tries) and (not red.exists(msg_id)):
-            count += 1
-            await asyncio.sleep(1)
-        blob = red.get(msg_id)
-        if blob is None or blob == b'NACK':
-            logger.warning('no ACK of `PUT FILE` jwt.txt from workspace deployment')
-            return
-
-        msg_id = str(uuid.uuid4())
-        eacommand.send_to_wd(
-            wdeployment_id,
-            {
-                'command': 'PUT FILE',
-                'iid': instance_id,
-                'did': wdeployment_id,
-                'message_id': msg_id,
-                'path': '/root/camerasend.py',
-                'content': open('addons/cam/camerasend.py', 'rt').read(),
-            },
-        )
-        max_tries = 30
-        count = 0
-        while (count < max_tries) and (not red.exists(msg_id)):
-            count += 1
-            await asyncio.sleep(1)
-        blob = red.get(msg_id)
-        if blob is None or blob == b'NACK':
-            logger.warning(
-                'no ACK of `PUT FILE` camerasend.py from workspace deployment'
-            )
-            return
-
-    else:
-        # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
-        # provide key text via stdin of child process.
-        tmp_fd, privatekey_path = tempfile.mkstemp()
-        privatekey_file = os.fdopen(tmp_fd, 'w')
-        privatekey_file.write(ssh_privatekey)
-        privatekey_file.close()
-
-        tmp_fd, tmp_token_path = tempfile.mkstemp()
-        tmp_token_file = os.fdopen(tmp_fd, 'w')
-        tmp_token_file.write(token)
-        tmp_token_file.close()
-
-        # TODO: run these processes in a Docker container? mainly intended as security
-        scp_cmd_prefix = [
-            'scp',
-            '-o',
-            'UserKnownHostsFile=/dev/null',
-            '-o',
-            'StrictHostKeyChecking=no',
-            '-i',
-            privatekey_path,
-            '-P',
-            str(port),
-        ]
-        scp_token_cmd = scp_cmd_prefix + [
-            tmp_token_path,
-            '{}@{}:~/jwt.txt'.format(addon_config['user'], ipv4),
-        ]
-        scp_up_cmd = scp_cmd_prefix + [
-            'addons/cam/camerasend.py',
-            '{}@{}:~/'.format(addon_config['user'], ipv4),
-        ]
-        for scp_cmd in [scp_token_cmd, scp_up_cmd]:
-            logger.info('run: {}'.format(scp_cmd))
-            scp_p = await create_subprocess_exec(*scp_cmd)
-            rc = await scp_p.wait()
-            if rc != 0:
-                logger.warning(
-                    'returncode of subprocess `{}` is {}'.format(' '.join(scp_cmd), rc)
-                )
+        return
 
     addon_config['status'] = 'active'
     with rrdb.create_session_context() as session:
@@ -547,83 +407,37 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
         )
         activeaddon.config = json.dumps(addon_config)
 
-    if wdeployment_id in [
-        '5e9de205-2208-4022-8bd6-b104b740c270',
-        'f74470ba-e486-474c-aceb-050ac2d82ef9',
-        '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-    ]:
-        for k, v in cam.items():
-            argv = ['python3', 'camerasend.py', instance_id, 'jwt.txt', str(k)]
-            if 'rotate' in v:
-                argv.append(v['rotate'])
-            if 'w' in v and 'h' in v:
-                if 'rotate' not in v:
-                    argv.append("0")
-                argv.append(v['w'])
-                argv.append(v['h'])
-            msg_id = str(uuid.uuid4())
-            eacommand.send_to_wd(
-                wdeployment_id,
-                {
-                    'command': 'EXEC INSIDE',
-                    'iid': instance_id,
-                    'did': wdeployment_id,
-                    'message_id': msg_id,
-                    'argv': argv,
-                },
+    for k, v in cam.items():
+        argv = ['python3', 'camerasend.py', instance_id, 'jwt.txt', str(k)]
+        if 'rotate' in v:
+            argv.append(v['rotate'])
+        if 'w' in v and 'h' in v:
+            if 'rotate' not in v:
+                argv.append("0")
+            argv.append(v['w'])
+            argv.append(v['h'])
+        msg_id = str(uuid.uuid4())
+        eacommand.send_to_wd(
+            wdeployment_id,
+            {
+                'command': 'EXEC INSIDE',
+                'iid': instance_id,
+                'did': wdeployment_id,
+                'message_id': msg_id,
+                'argv': argv,
+            },
+        )
+        max_tries = 30
+        count = 0
+        while (count < max_tries) and (not red.exists(msg_id)):
+            count += 1
+            await asyncio.sleep(1)
+        blob = red.get(msg_id)
+        if blob is None or blob == b'NACK':
+            logger.warning(
+                'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
             )
-            max_tries = 30
-            count = 0
-            while (count < max_tries) and (not red.exists(msg_id)):
-                count += 1
-                await asyncio.sleep(1)
-            blob = red.get(msg_id)
-            if blob is None or blob == b'NACK':
-                logger.warning(
-                    'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-                )
-                return
-
-    else:
-        camerasend_cmd_prefix = [
-            'ssh',
-            '-T',
-            '-o',
-            'UserKnownHostsFile=/dev/null',
-            '-o',
-            'StrictHostKeyChecking=no',
-            '-i',
-            privatekey_path,
-            '-p',
-            str(port),
-            '{}@{}'.format(addon_config['user'], ipv4),
-        ]
-        camerasend_cmds = []
-        for k, v in cam.items():
-            camerasend_cmds.append(
-                camerasend_cmd_prefix
-                + ['python3', 'camerasend.py', instance_id, 'jwt.txt', str(k)]
-            )
-            if 'rotate' in v:
-                camerasend_cmds[-1].append(v['rotate'])
-            if 'w' in v and 'h' in v:
-                if 'rotate' not in v:
-                    camerasend_cmds[-1].append("0")
-                camerasend_cmds[-1].append(v['w'])
-                camerasend_cmds[-1].append(v['h'])
-        for camerasend_cmd in camerasend_cmds:
-            logger.info('run: {}'.format(camerasend_cmd))
-            camerasend_p = await create_subprocess_exec(*camerasend_cmd)
-            rc = await camerasend_p.wait()
-            if rc != 0:
-                logger.warning(
-                    'returncode of subprocess `{}` is {}'.format(
-                        ' '.join(camerasend_cmd), rc
-                    )
-                )
-
-        os.unlink(privatekey_path)
-        os.unlink(tmp_token_path)
+            return
 
 
 async def addon_cam_stop_job(user, instance_id, eacommand=None):
@@ -673,67 +487,29 @@ async def addon_cam_stop_job(user, instance_id, eacommand=None):
             host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0
         )
 
-        if wdeployment_id in [
-            '5e9de205-2208-4022-8bd6-b104b740c270',
-            'f74470ba-e486-474c-aceb-050ac2d82ef9',
-            '9ed24591-5020-4bc7-a1d6-3f2490e3afa7',
-        ]:
-            argv = ['pkill', '-f', 'camerasend.py']
-            msg_id = str(uuid.uuid4())
-            eacommand.send_to_wd(
-                wdeployment_id,
-                {
-                    'command': 'EXEC INSIDE',
-                    'iid': instance_id,
-                    'did': wdeployment_id,
-                    'message_id': msg_id,
-                    'argv': argv,
-                },
+        argv = ['pkill', '-f', 'camerasend.py']
+        msg_id = str(uuid.uuid4())
+        eacommand.send_to_wd(
+            wdeployment_id,
+            {
+                'command': 'EXEC INSIDE',
+                'iid': instance_id,
+                'did': wdeployment_id,
+                'message_id': msg_id,
+                'argv': argv,
+            },
+        )
+        max_tries = 30
+        count = 0
+        while (count < max_tries) and (not red.exists(msg_id)):
+            count += 1
+            await asyncio.sleep(1)
+        blob = red.get(msg_id)
+        if blob is None or blob == b'NACK':
+            logger.warning(
+                'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
             )
-            max_tries = 30
-            count = 0
-            while (count < max_tries) and (not red.exists(msg_id)):
-                count += 1
-                await asyncio.sleep(1)
-            blob = red.get(msg_id)
-            if blob is None or blob == b'NACK':
-                logger.warning(
-                    'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-                )
-                return
-
-        else:
-            # TODO: another idea: use /dev/stdin as identity file (`-i` arg) and, then,
-            # provide key text via stdin of child process.
-            tmp_fd, privatekey_path = tempfile.mkstemp()
-            privatekey_file = os.fdopen(tmp_fd, 'w')
-            privatekey_file.write(ssh_privatekey)
-            privatekey_file.close()
-
-            kill_cmd = [
-                'ssh',
-                '-T',
-                '-o',
-                'UserKnownHostsFile=/dev/null',
-                '-o',
-                'StrictHostKeyChecking=no',
-                '-i',
-                privatekey_path,
-                '-p',
-                str(port),
-                '{}@{}'.format(addon_config['user'], ipv4),
-                'pkill',
-                '-f',
-                'camerasend.py',
-            ]
-            logger.info('run: {}'.format(kill_cmd))
-            kill_p = await create_subprocess_exec(*kill_cmd)
-            rc = await kill_p.wait()
-            os.unlink(privatekey_path)
-            if rc != 0:
-                logger.warning(
-                    f'on instance {instance_id}, command exitcode {rc}: {" ".join(kill_cmd)}'
-                )
+            return
 
     with rrdb.create_session_context() as session:
         session.delete(
