@@ -827,7 +827,7 @@ def _create_new_wdeployment_main(wdeployment_id, config):
             > 0
         )
         if not is_known:
-            logging.info(f'adding deployment {wdeployment_id}')
+            logger.info(f'adding deployment {wdeployment_id}')
             if 'desc_yaml' in config:
                 desc_yaml = config['desc_yaml']
             else:
@@ -846,7 +846,7 @@ def _create_new_wdeployment_main(wdeployment_id, config):
                 description=desc_yaml,
             )
             session.add(deployment)
-            logging.info(f'registered new workspace deployment {wdeployment_id}')
+            logger.info(f'registered new workspace deployment {wdeployment_id}')
             if 'hs' in config:
                 userprovided = rrdb.UserProvidedSupp(
                     deploymentid=deployment.deploymentid,
@@ -862,11 +862,11 @@ def _create_new_wdeployment_main(wdeployment_id, config):
                 session.add(dacl)
                 deployment.supported_addons = 'cmd,cmdsh'
                 deployment.addons_config = '{}'  # JSON, empty
-                logging.info(
+                logger.info(
                     f'registered hardshare data for wdeployment {deployment.deploymentid}'
                 )
         else:
-            logging.info(
+            logger.info(
                 f'received NEW notification from known deployment {wdeployment_id}'
             )
 
