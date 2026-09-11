@@ -9,5 +9,4 @@ Copyright (C) 2017 rerobots, Inc.
 
 from .factory import create_application
 
-
 application = create_application()

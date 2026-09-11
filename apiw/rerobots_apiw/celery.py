@@ -3,14 +3,11 @@ SCL <scott@rerobots>
 Copyright (C) 2021 rerobots, Inc.
 """
 
-from celery import Celery
-from celery import signals
+from celery import Celery, signals
 from celery.utils.log import get_task_logger
 
+from . import __version__, settings
 from .init import init_sentry
-from . import __version__
-from . import settings
-
 
 logger = get_task_logger(__name__)
 
@@ -63,7 +60,7 @@ app.config_from_object(celeryconfig)
 
 @signals.after_setup_logger.connect
 def after_setup_logger(sender=None, conf=None, **kwargs):
-    logger.info('this is version {}'.format(__version__))
+    logger.info(f'this is version {__version__}')
 
 
 @signals.worker_ready.connect

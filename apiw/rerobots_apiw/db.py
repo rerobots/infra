@@ -5,17 +5,16 @@ SCL <scott@rerobots>
 Copyright (C) 2017, 2018 rerobots, Inc.
 """
 
-from contextlib import contextmanager
 import logging
+from contextlib import contextmanager
 
 import sqlalchemy
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, relationship, sessionmaker
 from sqlalchemy.schema import UniqueConstraint
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 
-from .util import now
 from .settings import DB_URL
-
+from .util import now
 
 logger = logging.getLogger(__name__)
 

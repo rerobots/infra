@@ -9,7 +9,6 @@ from .. import db as rrdb
 from .. import proxy_tasks
 from ..requestproc import process_headers
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -77,19 +76,14 @@ async def apply_addon_mistyproxy(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon
-            == '{}:mistyproxy'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:mistyproxy')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
     if query.count() > 0:
         return web.json_response(
             {
-                'error_message': 'add-on `mistyproxy` already applied to instance {}'.format(
-                    instance_id
-                )
+                'error_message': f'add-on `mistyproxy` already applied to instance {instance_id}'
             },
             status=503,  # Service Unavailable
             headers=data['response_headers'],
@@ -109,7 +103,7 @@ async def apply_addon_mistyproxy(request):
         'status': 'starting',  # status \in {active, starting, stopping}
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:mistyproxy'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:mistyproxy',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -164,10 +158,7 @@ async def status_addon_mistyproxy(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon
-            == '{}:mistyproxy'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:mistyproxy')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -226,8 +217,7 @@ async def remove_addon_mistyproxy(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon
-            == '{}:mistyproxy'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:mistyproxy',
         )
     )
 

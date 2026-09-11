@@ -7,12 +7,11 @@ Copyright (C) 2020 rerobots, Inc.
 
 import logging
 
-from aiohttp import web
 import sqlalchemy
+from aiohttp import web
 
 from . import db as rrdb
 from .requestproc import process_headers
-
 
 logger = logging.getLogger(__name__)
 

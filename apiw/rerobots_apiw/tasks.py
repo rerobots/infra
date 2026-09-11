@@ -4,7 +4,6 @@ Copyright (C) 2018 rerobots, Inc.
 """
 
 import asyncio
-from datetime import timedelta
 import json
 import logging
 import os
@@ -13,27 +12,29 @@ import subprocess
 import tempfile
 import time
 import uuid
+from datetime import timedelta
 
-from celery.utils.log import get_task_logger
 import jwt
 import pika
+import redis
 import requests
 import sqlalchemy
+from celery.utils.log import get_task_logger
 
-import redis
-
-from .addons import addon_vnc_stop_job, addon_vnc_waitdelete_job, addon_cam_stop_job
-from .addons import addon_drive_stop_job, addon_cmd_stop_job
+from . import db as rrdb
+from . import notify, proxy_tasks, settings
+from .addons import (
+    addon_cam_stop_job,
+    addon_cmd_stop_job,
+    addon_drive_stop_job,
+    addon_vnc_stop_job,
+    addon_vnc_waitdelete_job,
+)
 from .addons.cmdsh import stop_job as addon_cmdsh_stop_job
 from .addons.wstcp import addon_wstcp_stop_job, addon_wstcp_waitdelete_job
-from .util import now
-from . import db as rrdb
 from .celery import app as capp
-from . import proxy_tasks
-from . import notify
 from .tunnel_hub_tasks import destroy_sshtun
-from . import settings
-
+from .util import now
 
 logger = get_task_logger(__name__)
 
@@ -41,11 +42,9 @@ logger = get_task_logger(__name__)
 class Error(Exception):
     """Error not otherwise specified"""
 
-    pass
-
 
 async def cleanup_terminated_instance(instance_id):
-    logger.debug('enter cleanup_terminated_instance({})'.format(instance_id))
+    logger.debug(f'enter cleanup_terminated_instance({instance_id})')
     addons_to_deactivate = []
     with rrdb.create_session_context() as session:
         instance = (
@@ -62,7 +61,7 @@ async def cleanup_terminated_instance(instance_id):
             rrdb.ActiveAddon.instanceid_with_addon.like(instance_id + '%')
         )
         for row in query:
-            logger.info('found active addon: {}'.format(row.instanceid_with_addon))
+            logger.info(f'found active addon: {row.instanceid_with_addon}')
             config = json.loads(row.config)
             if row.instanceid_with_addon.endswith(':vnc'):
                 addons_to_deactivate.append(
@@ -140,20 +139,20 @@ async def cleanup_terminated_instance(instance_id):
             if (
                 addon_to_deactivate['status'] == 'active'
             ):  # TODO: case of status = `starting`
-                logger.info('await addon_vnc_stop_job({})'.format(instance_id))
+                logger.info(f'await addon_vnc_stop_job({instance_id})')
                 await addon_vnc_stop_job(user=rootuser, instance_id=instance_id)
-            logger.info('await addon_vnc_waitdelete_job({})'.format(instance_id))
+            logger.info(f'await addon_vnc_waitdelete_job({instance_id})')
             await addon_vnc_waitdelete_job(user=rootuser, instance_id=instance_id)
         elif addon_to_deactivate['addon'] == 'wstcp':
             if (
                 addon_to_deactivate['status'] == 'active'
             ):  # TODO: case of status = `starting`
-                logger.info('await addon_wstcp_stop_job({})'.format(instance_id))
+                logger.info(f'await addon_wstcp_stop_job({instance_id})')
                 await addon_wstcp_stop_job(user=rootuser, instance_id=instance_id)
-            logger.info('await addon_wstcp_waitdelete_job({})'.format(instance_id))
+            logger.info(f'await addon_wstcp_waitdelete_job({instance_id})')
             await addon_wstcp_waitdelete_job(user=rootuser, instance_id=instance_id)
         elif addon_to_deactivate['addon'] == 'cam':
-            logger.info('await addon_cam_stop_job({})'.format(instance_id))
+            logger.info(f'await addon_cam_stop_job({instance_id})')
             await addon_cam_stop_job(user=rootuser, instance_id=instance_id)
         elif addon_to_deactivate['addon'] == 'mistyproxy':
             logger.info(f'stop_mistyproxy({rootuser}, {instance_id})')
@@ -170,16 +169,16 @@ async def cleanup_terminated_instance(instance_id):
             logger.info(f'stop_vscode({rootuser}, {instance_id})')
             proxy_tasks.stop_vscode.delay(user=rootuser, instance_id=instance_id)
         elif addon_to_deactivate['addon'] == 'drive':
-            logger.info('await addon_drive_stop_job({})'.format(instance_id))
+            logger.info(f'await addon_drive_stop_job({instance_id})')
             await addon_drive_stop_job(user=rootuser, instance_id=instance_id)
         elif addon_to_deactivate['addon'] == 'cmd':
-            logger.info('await addon_cmd_stop_job({})'.format(instance_id))
+            logger.info(f'await addon_cmd_stop_job({instance_id})')
             await addon_cmd_stop_job(user=rootuser, instance_id=instance_id)
         elif addon_to_deactivate['addon'] == 'cmdsh':
-            logger.info('await .cmdsh.stop_job({})'.format(instance_id))
+            logger.info(f'await .cmdsh.stop_job({instance_id})')
             await addon_cmdsh_stop_job(user=rootuser, instance_id=instance_id)
         else:
-            logger.error('unexpected addon: {}'.format(addon_to_deactivate))
+            logger.error(f'unexpected addon: {addon_to_deactivate}')
 
     wait_queue_available.delay(wdeployment_id)
 
@@ -192,7 +191,7 @@ def terminate_instance(instance_id, wdeployment_id):
         )
         inst = query.one_or_none()
         if inst is None:
-            logger.warning('called with unknown instance {}'.format(instance_id))
+            logger.warning(f'called with unknown instance {instance_id}')
             return
         if inst.status == 'TERMINATED':
             # No-op if already terminated
@@ -218,10 +217,10 @@ def terminate_instance(instance_id, wdeployment_id):
     pam_chan = pam_conn.channel()
     pam_chan.exchange_declare('portaccess.th', exchange_type='fanout')
 
-    logger.info('sending `INSTANCE DESTROY` to wdeployment {}'.format(wdeployment_id))
+    logger.info(f'sending `INSTANCE DESTROY` to wdeployment {wdeployment_id}')
     msg_id = str(uuid.uuid4())
     eacommand_chan.basic_publish(
-        exchange='eacommand.{}'.format(wdeployment_id),
+        exchange=f'eacommand.{wdeployment_id}',
         routing_key='',
         body=json.dumps(
             {
@@ -238,18 +237,14 @@ def terminate_instance(instance_id, wdeployment_id):
         count += 1
         time.sleep(6)
     done = False
-    nack_err = 'received NACK response to `INSTANCE DESTROY` from {}'.format(
-        wdeployment_id
-    )
+    nack_err = f'received NACK response to `INSTANCE DESTROY` from {wdeployment_id}'
     if red.type(msg_id) != b'hash':
         blob = red.get(msg_id)
         if blob == b'NACK':
             logger.error(nack_err)
             return
         if blob is None:
-            m = 'timed out waiting for response to `INSTANCE DESTROY` from {}, current instance {}'.format(
-                wdeployment_id, instance_id
-            )
+            m = f'timed out waiting for response to `INSTANCE DESTROY` from {wdeployment_id}, current instance {instance_id}'
             notify.to_admins.delay(m)
             logger.error(m)
             return
@@ -326,9 +321,7 @@ def terminate_instance(instance_id, wdeployment_id):
             loop.run_until_complete(asyncio.sleep(5))
 
     if not success:
-        logger.error(
-            'failed to call cleanup routines for instance {}'.format(instance_id)
-        )
+        logger.error(f'failed to call cleanup routines for instance {instance_id}')
         return
 
     loop.stop()
@@ -353,9 +346,7 @@ def do_periodic():
                 session.delete(row)
             elif (now() - inst.starttime).seconds >= row.target_duration:
                 # TODO: send notification if event url nonempty
-                logger.debug(
-                    'detected that instance {} should expire!'.format(inst.instanceid)
-                )
+                logger.debug(f'detected that instance {inst.instanceid} should expire!')
                 inst.terminating_started_at = now()
                 inst.status = 'TERMINATING'
                 terminate_instance.delay(inst.instanceid, inst.deploymentid)
@@ -538,9 +529,7 @@ def launch_instance(
                 session.add(rrdb.InstanceKeepAlive(instanceid=instance_id))
 
         elif instance.status != 'INIT':
-            logger.error(
-                'instance {} not INIT at start of launch job'.format(instance_id)
-            )
+            logger.error(f'instance {instance_id} not INIT at start of launch job')
             return
 
         if expire_d > 0:
@@ -582,9 +571,7 @@ def launch_instance(
         if current_count > 0 and random.random() < 1.0 / (current_count + 2):
             try:
                 notify.to_admins.delay(
-                    'INIT_FAIL instance {} on wd {}\nfor user {}'.format(
-                        instance_id, wdeployment_id, user
-                    )
+                    f'INIT_FAIL instance {instance_id} on wd {wdeployment_id}\nfor user {user}'
                 )
                 with rrdb.create_session_context() as session:
                     inst = (
@@ -632,7 +619,7 @@ def launch_instance(
     )
     eacommand_conn = pika.BlockingConnection(param)
     eacommand_chan = eacommand_conn.channel()
-    eax_name = 'eacommand.{}'.format(wdeployment_id)
+    eax_name = f'eacommand.{wdeployment_id}'
 
     param = pika.ConnectionParameters(
         host=settings.AMQP_HOST, port=settings.AMQP_PORT, heartbeat=20
@@ -662,9 +649,7 @@ def launch_instance(
     except Exception as err:
         logger.warning(f'caught {type(err)}: {err}')
         notify.to_admins.delay(
-            'INIT_FAIL instance {} on wd {}\nfor user {}'.format(
-                instance_id, wdeployment_id, user
-            )
+            f'INIT_FAIL instance {instance_id} on wd {wdeployment_id}\nfor user {user}'
         )
         with rrdb.create_session_context() as session:
             inst = (
@@ -684,9 +669,7 @@ def launch_instance(
         blob = red.get(msg_id)
         if blob is None:
             notify.to_admins.delay(
-                'INIT_FAIL instance {} on wd {}\nfor user {}'.format(
-                    instance_id, wdeployment_id, user
-                )
+                f'INIT_FAIL instance {instance_id} on wd {wdeployment_id}\nfor user {user}'
             )
             with rrdb.create_session_context() as session:
                 inst = (
@@ -696,16 +679,12 @@ def launch_instance(
                 )
                 inst.status = 'INIT_FAIL'
             logger.error(
-                'timeout waiting for wdeployment {} response for instance {}'.format(
-                    wdeployment_id, instance_id
-                )
+                f'timeout waiting for wdeployment {wdeployment_id} response for instance {instance_id}'
             )
             return
         if blob == b'NACK':
             notify.to_admins.delay(
-                'INIT_FAIL instance {} on wd {}\nfor user {}'.format(
-                    instance_id, wdeployment_id, user
-                )
+                f'INIT_FAIL instance {instance_id} on wd {wdeployment_id}\nfor user {user}'
             )
             with rrdb.create_session_context() as session:
                 inst = (
@@ -715,9 +694,7 @@ def launch_instance(
                 )
                 inst.status = 'INIT_FAIL'
             logger.error(
-                'wdeployment {} denied launch of instance {}'.format(
-                    wdeployment_id, instance_id
-                )
+                f'wdeployment {wdeployment_id} denied launch of instance {instance_id}'
             )
             return
     else:
@@ -726,16 +703,12 @@ def launch_instance(
             st = red.hget(msg_id, 'st')
             if st == b'TERMINATING':
                 logger.warning(
-                    'wdeployment {} terminating; retrying in 30 s'.format(
-                        wdeployment_id
-                    )
+                    f'wdeployment {wdeployment_id} terminating; retrying in 30 s'
                 )
                 self.retry(countdown=30, max_retries=2)
             else:
                 notify.to_admins.delay(
-                    'INIT_FAIL instance {} on wd {}\nfor user {}'.format(
-                        instance_id, wdeployment_id, user
-                    )
+                    f'INIT_FAIL instance {instance_id} on wd {wdeployment_id}\nfor user {user}'
                 )
                 with rrdb.create_session_context() as session:
                     inst = (
@@ -745,9 +718,7 @@ def launch_instance(
                     )
                     inst.status = 'INIT_FAIL'
                 logger.error(
-                    'wdeployment {} denied launch of instance {}, requires manual check'.format(
-                        wdeployment_id, instance_id
-                    )
+                    f'wdeployment {wdeployment_id} denied launch of instance {instance_id}, requires manual check'
                 )
                 return
 
@@ -792,21 +763,17 @@ def wait_queue_available(wdeployment_id):
     """
     with rrdb.create_session_context() as session:
         query = session.query(rrdb.Reservation).filter(
-            rrdb.Reservation.rfilter == 'wd:{}'.format(wdeployment_id),
+            rrdb.Reservation.rfilter == f'wd:{wdeployment_id}',
             rrdb.Reservation.handler == 0,
         )
         reservation = query.first()
         if reservation is None:
             logger.info(
-                'wd {} is available, but no existing reservations match it'.format(
-                    wdeployment_id
-                )
+                f'wd {wdeployment_id} is available, but no existing reservations match it'
             )
             return
         logger.info(
-            'available wd {} satisfies reservation {}; trying to obtain lock...'.format(
-                wdeployment_id, reservation.reservationid
-            )
+            f'available wd {wdeployment_id} satisfies reservation {reservation.reservationid}; trying to obtain lock...'
         )
         if len(reservation.ssh_publickey) > 0:
             ssh_publickey = reservation.ssh_publickey
@@ -860,7 +827,7 @@ def _create_new_wdeployment_main(wdeployment_id, config):
             > 0
         )
         if not is_known:
-            logging.info('adding deployment {}'.format(wdeployment_id))
+            logging.info(f'adding deployment {wdeployment_id}')
             if 'desc_yaml' in config:
                 desc_yaml = config['desc_yaml']
             else:
@@ -879,9 +846,7 @@ def _create_new_wdeployment_main(wdeployment_id, config):
                 description=desc_yaml,
             )
             session.add(deployment)
-            logging.info(
-                'registered new workspace deployment {}'.format(wdeployment_id)
-            )
+            logging.info(f'registered new workspace deployment {wdeployment_id}')
             if 'hs' in config:
                 userprovided = rrdb.UserProvidedSupp(
                     deploymentid=deployment.deploymentid,
@@ -898,15 +863,11 @@ def _create_new_wdeployment_main(wdeployment_id, config):
                 deployment.supported_addons = 'cmd,cmdsh'
                 deployment.addons_config = '{}'  # JSON, empty
                 logging.info(
-                    'registered hardshare data for wdeployment {}'.format(
-                        deployment.deploymentid
-                    )
+                    f'registered hardshare data for wdeployment {deployment.deploymentid}'
                 )
         else:
             logging.info(
-                'received NEW notification from known deployment {}'.format(
-                    wdeployment_id
-                )
+                f'received NEW notification from known deployment {wdeployment_id}'
             )
 
 
@@ -971,9 +932,7 @@ def update_wdeployment(wdeployment_id, config):
 @capp.task
 def dissolve_user_provided(wdeployment_id, owner, date_dissolved):
     logger.info(
-        'dissolving user_provided wdeployment {} (owner: {}), timestamp {}'.format(
-            wdeployment_id, owner, date_dissolved
-        )
+        f'dissolving user_provided wdeployment {wdeployment_id} (owner: {owner}), timestamp {date_dissolved}'
     )
     with rrdb.create_session_context() as session:
         wd = (
@@ -985,18 +944,16 @@ def dissolve_user_provided(wdeployment_id, owner, date_dissolved):
         )
         if wd.date_dissolved is None:
             wd.date_dissolved = date_dissolved
-            logger.info('marked wdeployment {} as dissolved'.format(wdeployment_id))
+            logger.info(f'marked wdeployment {wdeployment_id} as dissolved')
         else:
             logger.warning(
-                'ignoring task with timestamp {} to dissolve user_provided wd {} that was already dissolved at {}'.format(
-                    date_dissolved, wdeployment_id, str(wd.date_dissolved)
-                )
+                f'ignoring task with timestamp {date_dissolved} to dissolve user_provided wd {wdeployment_id} that was already dissolved at {wd.date_dissolved!s}'
             )
 
 
 # TODO: filter localhost and rerobots-internal targets when not DEBUG
 def notify_user(event_url, payload):
-    logger.info('sending event notification to {}'.format(event_url))
+    logger.info(f'sending event notification to {event_url}')
     ts = time.time()
     tok = jwt.encode(
         {'exp': int(ts) + 10, 'nbf': int(ts) - 1},
@@ -1004,7 +961,7 @@ def notify_user(event_url, payload):
         algorithm='RS256',
     )
     headers = {
-        'Authorization': 'Bearer {}'.format(tok),
+        'Authorization': f'Bearer {tok}',
     }
     if event_url.startswith('https://') or (
         settings.DEBUG and event_url.startswith('http://')
@@ -1012,7 +969,7 @@ def notify_user(event_url, payload):
         # TODO: use aiohttp ClientSession instead of requests.post() ?
         res = requests.post(event_url, json=payload, headers=headers)
         if not res.ok:
-            logger.warning('POST request failed to event URL: {}'.format(event_url))
+            logger.warning(f'POST request failed to event URL: {event_url}')
 
     elif event_url.startswith('mailto://'):
         addr = event_url[len('mailto://') :]
@@ -1028,7 +985,7 @@ def notify_user(event_url, payload):
             )
 
     else:
-        logger.warning('unrecognized event URL: {}'.format(event_url))
+        logger.warning(f'unrecognized event URL: {event_url}')
 
 
 @capp.task

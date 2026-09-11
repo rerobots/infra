@@ -4,9 +4,8 @@ import aiohttp
 from aiohttp import web
 
 from . import db as rrdb
-from .requestproc import process_headers
 from . import settings
-
+from .requestproc import process_headers
 
 logger = logging.getLogger(__name__)
 

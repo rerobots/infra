@@ -5,13 +5,12 @@ Copyright (C) 2020 rerobots, Inc.
 
 import logging
 
-from aiohttp import web
 import sqlalchemy
+from aiohttp import web
 
 from . import db as rrdb
-from .requestproc import process_headers
 from . import notify
-
+from .requestproc import process_headers
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ async def join_mailinglist(request):
         request['dbsession'].commit()
     except sqlalchemy.exc.IntegrityError as err:
         request['dbsession'].rollback()
-        logger.warning('caught {}: {}'.format(type(err), err))
+        logger.warning(f'caught {type(err)}: {err}')
         return web.Response(status=400, headers=data['response_headers'])
 
     notify.new_mailinglist_subscriber.delay(

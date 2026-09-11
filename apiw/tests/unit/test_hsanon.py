@@ -5,8 +5,6 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
-import pytest
-
 from fixtures import cleardb, clearks, client
 
 

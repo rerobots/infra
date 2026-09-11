@@ -4,20 +4,16 @@ Copyright (C) 2023 rerobots, Inc.
 """
 
 import json
-import os
-import subprocess
-import tempfile
 import time
 import uuid
 
-from celery.utils.log import get_task_logger
 import pika
 import redis
+from celery.utils.log import get_task_logger
 
-from ..celery import app as capp
 from .. import db as rrdb
 from .. import settings
-
+from ..celery import app as capp
 
 logger = get_task_logger(__name__)
 
@@ -45,8 +41,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:cmdsh'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
                 )
                 .one_or_none()
             )
@@ -61,9 +56,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
             wdeployment_id = instance.deploymentid
 
         if instance_status == 'READY' and len(ipv4) > 0:
-            logger.info(
-                'instance READY with IPv4 addr {} and port {}'.format(ipv4, port)
-            )
+            logger.info(f'instance READY with IPv4 addr {ipv4} and port {port}')
             break
 
         time.sleep(1)
@@ -77,7 +70,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
     )
     eacommand_conn = pika.BlockingConnection(param)
     eacommand_chan = eacommand_conn.channel()
-    eax_name = 'eacommand.{}'.format(wdeployment_id)
+    eax_name = f'eacommand.{wdeployment_id}'
 
     eacommand_chan.basic_publish(
         exchange=eax_name,
@@ -134,7 +127,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
     argv = [
         'sh',
         '-c',
-        'cd ~ && python3 cmdshr {} {} jwt.txt'.format(instance_id, host_id),
+        f'cd ~ && python3 cmdshr {instance_id} {host_id} jwt.txt',
     ]
     msg_id = str(uuid.uuid4())
     eacommand_chan.basic_publish(
@@ -158,9 +151,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
         time.sleep(1)
     blob = red.get(msg_id)
     if blob is None or blob == b'NACK':
-        logger.warning(
-            'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-        )
+        logger.warning(f'no ACK of `EXEC INSIDE` {argv} from workspace deployment')
         return
 
     addon_config['hstatus'][host_id] = 'active'
@@ -169,8 +160,7 @@ def start_cmdsh(self, user, instance_id, host_id, token):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:cmdsh'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
             )
             .one()
         )

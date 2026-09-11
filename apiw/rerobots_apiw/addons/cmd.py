@@ -1,20 +1,19 @@
 import asyncio
 import base64
-import logging
 import json
+import logging
 import os
 import tempfile
 import uuid
 
 import aiohttp
-from aiohttp import web
 import jwt
+from aiohttp import web
 
 from .. import db as rrdb
 from ..requestproc import process_headers
-from ..util import create_subprocess_exec
 from ..settings import WEBUI_PUBLIC_KEY
-
+from ..util import create_subprocess_exec
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +31,7 @@ async def addon_cmd_start_job(
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:cmd'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
                 )
                 .one_or_none()
             )
@@ -52,9 +50,7 @@ async def addon_cmd_start_job(
             port = instance.listening_port
 
         if instance_status == 'READY' and len(ipv4) > 0:
-            logger.info(
-                'instance READY with IPv4 addr {} and port {}'.format(ipv4, port)
-            )
+            logger.info(f'instance READY with IPv4 addr {ipv4} and port {port}')
             break
         await asyncio.sleep(1)
 
@@ -91,7 +87,7 @@ async def addon_cmd_start_job(
         '{}@{}:~/'.format(addon_config['user'], ipv4),
     ]
     for scp_cmd in [scp_token_cmd, scp_up_cmd]:
-        logger.info('exec: {}'.format(scp_cmd))
+        logger.info(f'exec: {scp_cmd}')
         scp_p = await create_subprocess_exec(*scp_cmd)
         rc = await scp_p.wait()
         if rc != 0:
@@ -105,7 +101,7 @@ async def addon_cmd_start_job(
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
             )
             .one()
         )
@@ -129,7 +125,7 @@ async def addon_cmd_start_job(
         cmdr_call.append(base_uri)
     if not verify_certs:
         cmdr_call.append('0')
-    logger.info('exec: {}'.format(cmdr_call))
+    logger.info(f'exec: {cmdr_call}')
     cmdr_p = await create_subprocess_exec(*cmdr_call)
     rc = await cmdr_p.wait()
     if rc != 0:
@@ -147,7 +143,7 @@ async def addon_cmd_stop_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
             )
             .one()
         )
@@ -190,7 +186,7 @@ async def addon_cmd_stop_job(user, instance_id):
             '-f',
             'cmdr',
         ]
-        logger.info('exec: {}'.format(kill_cmd))
+        logger.info(f'exec: {kill_cmd}')
         kill_p = await create_subprocess_exec(*kill_cmd)
         rc = await kill_p.wait()
         os.unlink(privatekey_path)
@@ -204,7 +200,7 @@ async def addon_cmd_stop_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
             )
             .one()
         )
@@ -287,7 +283,7 @@ async def apply_addon_cmd(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -307,7 +303,7 @@ async def apply_addon_cmd(request):
         'status': 'starting',  # status \in {active, starting, stopping}
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:cmd'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:cmd',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -376,7 +372,7 @@ async def status_addon_cmd(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -440,7 +436,7 @@ async def remove_addon_cmd(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
         )
     )
 
@@ -463,16 +459,16 @@ async def remove_addon_cmd(request):
 
 
 async def cmd_sender_job(red, instance_id, ws_send):
-    handle = 'cmd:{}'.format(instance_id)
+    handle = f'cmd:{instance_id}'
     try:
         while True:
             await asyncio.sleep(0.5)
             x = red.lpop(handle)
             if x:
-                logger.debug('detected cmd: {}'.format(x))
+                logger.debug(f'detected cmd: {x}')
                 x = str(x, encoding='utf-8')
                 await ws_send(x)
-                logger.info('sent: {}'.format(x))
+                logger.info(f'sent: {x}')
     except asyncio.CancelledError:
         pass
 
@@ -523,7 +519,7 @@ async def cmd_rx_commands(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == payload['sub'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
         )
     )
     row = query.one_or_none()
@@ -555,7 +551,7 @@ async def cmd_rx_commands(request):
             red=request.app['red'], instance_id=instance_id, ws_send=ws.send_str
         )
     )
-    base_handle = 'cmd:stdout:{}'.format(instance_id)
+    base_handle = f'cmd:stdout:{instance_id}'
     try:
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
@@ -566,9 +562,10 @@ async def cmd_rx_commands(request):
                     handle = base_handle + ':{}'.format(m['i'])
                     request.app['red'].rpush(handle, msg.data)
                     request.app['red'].expire(handle, 30)
-            elif msg.type == aiohttp.WSMsgType.CLOSED:
-                break
-            elif msg.type == aiohttp.WSMsgType.ERROR:
+            elif (
+                msg.type == aiohttp.WSMsgType.CLOSED
+                or msg.type == aiohttp.WSMsgType.ERROR
+            ):
                 break
     except asyncio.CancelledError:
         pass
@@ -620,7 +617,7 @@ async def cmd_send_command(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -675,7 +672,7 @@ async def cmd_send_command(request):
         'id': cmd_id,
         'cmd': given['cmd'],
     }
-    request.app['red'].rpush('cmd:{}'.format(instance_id), json.dumps(payload))
+    request.app['red'].rpush(f'cmd:{instance_id}', json.dumps(payload))
     return web.json_response({'success': True, 'id': cmd_id})
 
 
@@ -721,10 +718,10 @@ async def cmd_readline_stdout(request):
 
     if 'cmdid' in request.match_info:
         cmd_id = request.match_info['cmdid']
-        handle = 'cmd:stdout:{}:{}'.format(instance_id, cmd_id)
+        handle = f'cmd:stdout:{instance_id}:{cmd_id}'
     else:
         cmd_id = None
-        handle = 'cmd:stdout:{}'.format(instance_id)
+        handle = f'cmd:stdout:{instance_id}'
 
     lines = []
     terminated = False
@@ -733,7 +730,7 @@ async def cmd_readline_stdout(request):
         if x is None:
             break
         m = json.loads(str(x, encoding='utf-8'))
-        if 't' in m and m['t']:
+        if m.get('t'):
             terminated = True
         else:
             lines.append(m['l'])
@@ -787,7 +784,7 @@ async def cmd_send_file(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -853,7 +850,7 @@ async def cmd_send_file(request):
         try:
             given_data = base64.b64decode(given['data'])
         except Exception as err:
-            logger.warning('caught {}: {}'.format(type(err), err))
+            logger.warning(f'caught {type(err)}: {err}')
             return web.Response(
                 status=400,
                 content_type='application/json',
@@ -885,7 +882,7 @@ async def cmd_send_file(request):
         tmp_path,
         '{}@{}:{}'.format(addon_config['user'], ipv4, given['path']),
     ]
-    logger.info('exec: {}'.format(scp_cmd))
+    logger.info(f'exec: {scp_cmd}')
     scp_p = await create_subprocess_exec(*scp_cmd)
     rc = await scp_p.wait()
     if rc != 0:
@@ -941,7 +938,7 @@ async def cmd_cancel_job(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmd'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmd',
         )
     )
     row = query.one_or_none()
@@ -971,5 +968,5 @@ async def cmd_cancel_job(request):
         'id': cmd_id,
         'do': 'cancel',
     }
-    request.app['red'].rpush('cmd:{}'.format(instance_id), json.dumps(payload))
+    request.app['red'].rpush(f'cmd:{instance_id}', json.dumps(payload))
     return web.json_response({'success': True, 'id': cmd_id})

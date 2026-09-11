@@ -5,24 +5,23 @@ SCL <scott@rerobots>
 Copyright (C) 2018 rerobots, Inc.
 """
 
-from datetime import datetime, timedelta, timezone
 import json
 import logging
 import math
 import time
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from aiohttp import web
 import sqlalchemy
+from aiohttp import web
 from sqlalchemy import not_, null
 
-from .cap import accept_instantiate
-from .commands import compute_queuelen, get_wdinfo
 from . import db as rrdb
 from . import tasks
+from .cap import accept_instantiate
+from .commands import compute_queuelen, get_wdinfo
 from .requestproc import process_headers
 from .util import now
-
 
 logger = logging.getLogger(__name__)
 
@@ -130,8 +129,7 @@ async def get_instances_list(request):
         page_count = 1
     else:
         page_count = math.ceil(query.count() / max_per_page) if query.count() > 0 else 1
-    if page > page_count:
-        page = page_count
+    page = min(page, page_count)
 
     wds = []
     for ii, row in enumerate(query):
@@ -674,7 +672,7 @@ async def request_instance(request):
 
     if 'wt' in data['payload'] and wtype not in data['payload']['wt']:
         return web.json_response(
-            {'error_message': 'token not valid for wtype {}'.format(wtype)},
+            {'error_message': f'token not valid for wtype {wtype}'},
             status=400,
             headers=data['response_headers'],
         )
@@ -698,7 +696,7 @@ async def request_instance(request):
     waiting_ub = (
         request['dbsession']
         .query(rrdb.Reservation)
-        .filter(rrdb.Reservation.rfilter == 'wd:{}'.format(deploymentid))
+        .filter(rrdb.Reservation.rfilter == f'wd:{deploymentid}')
         .count()
     )
     current_count = (
@@ -746,7 +744,7 @@ async def request_instance(request):
             reservationid=str(uuid.uuid4()),
             user=data['user'],
             createdtime=now(),
-            rfilter='wd:{}'.format(deploymentid),
+            rfilter=f'wd:{deploymentid}',
             ssh_publickey=ssh_publickey,
             has_vpn=opts['vpn'],
             expire_d=opts['expire_d'],

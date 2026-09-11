@@ -12,16 +12,15 @@ import time
 import uuid
 
 import aiohttp
-from aiohttp import web
 import sqlalchemy
+from aiohttp import web
 from sqlalchemy import null
 
 from . import db as rrdb
-from .requestproc import process_headers
 from . import tasks, tunnel_hub_tasks
 from .hschannels import CommandChannel, ConnectionChannel
+from .requestproc import process_headers
 from .util import create_subprocess_exec, now
-
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +53,7 @@ async def status_cam(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == owner,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(wd.deploymentid),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{wd.deploymentid}:hscam',
             )
         )
         row = query.one_or_none()
@@ -199,8 +197,7 @@ async def remove_cam(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == owner,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(wd.deploymentid),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{wd.deploymentid}:hscam',
             )
         )
         row = query.one_or_none()
@@ -243,8 +240,7 @@ async def cam_upload(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == owner,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(wd.deploymentid),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{wd.deploymentid}:hscam',
             )
         )
         row = query.one_or_none()
@@ -261,7 +257,7 @@ async def cam_upload(request):
     ws = web.WebSocketResponse(timeout=90.0, heartbeat=30.0, autoping=True)
     await ws.prepare(request)
 
-    handle = '{}:hscam:0'.format(hscamera_id)
+    handle = f'{hscamera_id}:hscam:0'
     crop_config = addon_config.get('crop', None)
     wds = addon_config['wds']
     sender_task = request.app.loop.create_task(
@@ -492,8 +488,7 @@ async def instances_on_mine(request):
         page_count = 1
     else:
         page_count = math.ceil(query.count() / max_per_page)
-    if page > page_count:
-        page = page_count
+    page = min(page, page_count)
 
     # TODO: return page_count in header?
 
@@ -742,7 +737,7 @@ async def cam_start_stop_sender(handle, crop_config, send, wds=None):
             if croptask is not None:
                 croptask.kill()
         except Exception as err:
-            logger.warning('{}: {}'.format(type(err), err))
+            logger.warning(f'{type(err)}: {err}')
 
 
 async def register_new_wdeployment(request):
@@ -1002,7 +997,7 @@ async def advertise_wdeployment(request):
     try:
         ws = web.WebSocketResponse(timeout=90.0, heartbeat=30.0, autoping=True)
         await ws.prepare(request)
-        logger.debug('WebSocket opened for {}'.format(wd.deploymentid))
+        logger.debug(f'WebSocket opened for {wd.deploymentid}')
 
         portaccess = ConnectionChannel(
             wd.deploymentid,
@@ -1037,15 +1032,13 @@ async def advertise_wdeployment(request):
             if request.app['red'].hget(rkey, 'ad') != pid:
                 if msg is not None:
                     logger.warning(
-                        'do not have semaphore, but received via WebSocket: {}'.format(
-                            msg
-                        )
+                        f'do not have semaphore, but received via WebSocket: {msg}'
                     )
                 return ws
             if msg is None:
                 continue
             if msg.type == aiohttp.WSMsgType.TEXT:
-                logger.debug('received ws message: {}'.format(msg.data))
+                logger.debug(f'received ws message: {msg.data}')
                 try:
                     payload = json.loads(msg.data)
                     assert 'v' in payload and payload['v'] == 0
@@ -1091,15 +1084,11 @@ async def advertise_wdeployment(request):
                                         )
                                     else:
                                         logger.warning(
-                                            'INSTANCE_DESTROY but prior instance {} not found'.format(
-                                                eacommand.prior_instance[0]
-                                            )
+                                            f'INSTANCE_DESTROY but prior instance {eacommand.prior_instance[0]} not found'
                                         )
                                 else:
                                     logger.warning(
-                                        'INSTANCE_DESTROY but prior instance {} destroyed too long ago'.format(
-                                            eacommand.prior_instance[0]
-                                        )
+                                        f'INSTANCE_DESTROY but prior instance {eacommand.prior_instance[0]} destroyed too long ago'
                                     )
                             else:
                                 logger.warning(
@@ -1184,9 +1173,7 @@ async def advertise_wdeployment(request):
                                     inst.hostkey = payload['h']
                                     logger.debug(
                                         'received instance hostkey '
-                                        '{} (status: {})'.format(
-                                            inst.hostkey, inst.status
-                                        )
+                                        f'{inst.hostkey} (status: {inst.status})'
                                     )
 
                         if instance_id is not None:
@@ -1340,20 +1327,18 @@ async def advertise_wdeployment(request):
                     )
 
             elif msg.type == aiohttp.WSMsgType.CLOSED:
-                logger.debug('WebSocket CLOSED for {}'.format(wd.deploymentid))
+                logger.debug(f'WebSocket CLOSED for {wd.deploymentid}')
                 break
 
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 logger.debug(
-                    'error message in WebSocket session for {}'.format(wd.deploymentid)
+                    f'error message in WebSocket session for {wd.deploymentid}'
                 )
                 break
 
             else:
                 logger.debug(
-                    'unexpected message type {} in WebSocket session for {}'.format(
-                        msg.type, wd.deploymentid
-                    )
+                    f'unexpected message type {msg.type} in WebSocket session for {wd.deploymentid}'
                 )
                 break
 

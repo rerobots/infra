@@ -3,11 +3,7 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
-import time
-
 import pytest
-
-import jwt
 
 from fixtures import client, api_token
 
@@ -50,7 +46,7 @@ async def test_start_restart_job(client, api_token):
         'branch': 'devel',
     }
     resp = await client.post(
-        '/ci/project/{}/job'.format(proj_id), json=job_command, headers=headers
+        f'/ci/project/{proj_id}/job', json=job_command, headers=headers
     )
     assert resp.status == 200
     payload = await resp.json()
@@ -59,7 +55,7 @@ async def test_start_restart_job(client, api_token):
 
     job_command = {'do': 'restart'}
     resp = await client.post(
-        '/ci/project/{}/job/{}'.format(proj_id, job_id),
+        f'/ci/project/{proj_id}/job/{job_id}',
         json=job_command,
         headers=headers,
     )

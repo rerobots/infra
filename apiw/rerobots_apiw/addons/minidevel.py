@@ -16,7 +16,6 @@ from .. import db as rrdb
 from .. import proxy_tasks
 from ..requestproc import process_headers
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -119,9 +118,7 @@ async def apply_addon(request, kind):
     if query.count() > 0:
         return web.json_response(
             {
-                'error_message': 'add-on `{}` already applied to instance {}'.format(
-                    kind, instance_id
-                )
+                'error_message': f'add-on `{kind}` already applied to instance {instance_id}'
             },
             status=503,  # Service Unavailable
             headers=data['response_headers'],
@@ -141,7 +138,7 @@ async def apply_addon(request, kind):
         'status': 'starting',  # status \in {active, starting, stopping}
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:{}'.format(instance_id, kind),
+        instanceid_with_addon=f'{instance_id}:{kind}',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -252,14 +249,14 @@ async def remove_addon(request, kind):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:{}'.format(instance_id, kind),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:{kind}',
         )
     )
 
     row = query.one_or_none()
     if row is None:
         return web.json_response(
-            {'error_message': 'add-on `{}` not active on this instance'.format(kind)},
+            {'error_message': f'add-on `{kind}` not active on this instance'},
             status=404,
             headers=data['response_headers'],
         )

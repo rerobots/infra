@@ -12,14 +12,13 @@ import tempfile
 import time
 import uuid
 
-from celery.utils.log import get_task_logger
 import redis
+from celery.utils.log import get_task_logger
 
-from .celery import app as capp
 from . import db as rrdb
-from .util import get_container_addr, is_public_tunnelhub
 from . import settings
-
+from .celery import app as capp
+from .util import get_container_addr, is_public_tunnelhub
 
 logger = get_task_logger(__name__)
 
@@ -392,7 +391,7 @@ def start_minidevel(user, instance_id, kind):
     get_port = [settings.TH_CONTAINER_PROVIDER, 'port', pid, '8888']
     cmds = [start_container]
     for cmd in cmds:
-        logger.info('run: {}'.format(cmd))
+        logger.info(f'run: {cmd}')
         cmd_p = subprocess.run(cmd)  # Wait to complete because this is prerequisite
 
     cmd_p = subprocess.run(
@@ -571,7 +570,7 @@ def start_vscode(user, instance_id):
         settings.TH_CONTAINER_PROVIDER,
         'cp',
         privatekey_path,
-        '{}:/root/id_rsa'.format(pid),
+        f'{pid}:/root/id_rsa',
     ]
     get_port = [settings.TH_CONTAINER_PROVIDER, 'port', pid, '80']
     start_vscode = [
@@ -614,7 +613,7 @@ def start_vscode(user, instance_id):
     ]
     cmds = [start_container, cp_private_key, start_vscode, start_ssh_fwd]
     for cmd in cmds:
-        logger.info('run: {}'.format(cmd))
+        logger.info(f'run: {cmd}')
         subprocess.check_call(cmd)
 
     cmd_p = subprocess.run(
@@ -777,7 +776,7 @@ http {
             out += UPSTREAM_PART.format(
                 ADDR=ap.address,
                 PORT=port,
-                APPSERVERNAME='app_server_{}_{}'.format(ap.instance_hash, ap.addon),
+                APPSERVERNAME=f'app_server_{ap.instance_hash}_{ap.addon}',
             )
 
         out += PREFIX1
@@ -786,7 +785,7 @@ http {
                 INSTANCEHASH=ap.instance_hash,
                 ADDON=ap.addon,
                 TOKEN=ap.token,
-                APPSERVERNAME='app_server_{}_{}'.format(ap.instance_hash, ap.addon),
+                APPSERVERNAME=f'app_server_{ap.instance_hash}_{ap.addon}',
             )
         out += SUFFIX
     return out

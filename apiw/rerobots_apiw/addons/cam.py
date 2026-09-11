@@ -2,20 +2,16 @@ import asyncio
 import base64
 import json
 import logging
-import os
-import tempfile
 import uuid
 
 import aiohttp
-from aiohttp import web
 import jwt
 import redis
+from aiohttp import web
 
 from .. import db as rrdb
-from ..requestproc import process_headers
-from ..util import create_subprocess_exec
 from .. import settings
-
+from ..requestproc import process_headers
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +104,7 @@ async def addon_cam_snapshot(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
         )
     )
     row = query.one_or_none()
@@ -118,7 +114,7 @@ async def addon_cam_snapshot(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(instance.deploymentid)
+                == f'{instance.deploymentid}:hscam'
             )
         )
         row = query.one_or_none()
@@ -151,7 +147,7 @@ async def addon_cam_snapshot(request):
     if hscam:
         handle = '{}:hscam:0'.format(addon_config['hscamid'])
     else:
-        handle = '{}:cam:{}'.format(instance_id, camera_id)
+        handle = f'{instance_id}:cam:{camera_id}'
     if request.app['red'].exists(handle):
         img = str(request.app['red'].get(handle), encoding='utf-8')
         index = img.find(',')
@@ -181,15 +177,13 @@ async def restart_cam_job(eacommand, user, instance_id, token):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
             )
             .one_or_none()
         )
         if activeaddon is None:
             logger.warning(
-                'called when instance {} does not have cam add-on applied'.format(
-                    instance_id
-                )
+                f'called when instance {instance_id} does not have cam add-on applied'
             )
             return
         addon_config = json.loads(activeaddon.config)
@@ -199,7 +193,7 @@ async def restart_cam_job(eacommand, user, instance_id, token):
             .one()
         )
         if instance.status != 'READY':
-            logger.warning('called when instance {} is not READY'.format(instance_id))
+            logger.warning(f'called when instance {instance_id} is not READY')
             return
         ssh_privatekey = str(instance.ssh_privatekey)
         ipv4 = instance.listening_ipaddr
@@ -259,9 +253,7 @@ async def restart_cam_job(eacommand, user, instance_id, token):
         await asyncio.sleep(1)
     blob = red.get(msg_id)
     if blob is None or blob == b'NACK':
-        logger.warning(
-            'no ACK of `PUT FILE` camerasend.py from workspace deployment'
-        )
+        logger.warning('no ACK of `PUT FILE` camerasend.py from workspace deployment')
         return
 
     for k, v in cam.items():
@@ -291,9 +283,7 @@ async def restart_cam_job(eacommand, user, instance_id, token):
             await asyncio.sleep(1)
         blob = red.get(msg_id)
         if blob is None or blob == b'NACK':
-            logger.warning(
-                'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-            )
+            logger.warning(f'no ACK of `EXEC INSIDE` {argv} from workspace deployment')
             return
 
 
@@ -308,8 +298,7 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:cam'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
                 )
                 .one_or_none()
             )
@@ -329,9 +318,7 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
             wdeployment_id = instance.deploymentid
 
         if (addon_config is not None) and instance_status == 'READY' and len(ipv4) > 0:
-            logger.info(
-                'instance READY with IPv4 addr {} and port {}'.format(ipv4, port)
-            )
+            logger.info(f'instance READY with IPv4 addr {ipv4} and port {port}')
             break
         await asyncio.sleep(1)
 
@@ -390,9 +377,7 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
         await asyncio.sleep(1)
     blob = red.get(msg_id)
     if blob is None or blob == b'NACK':
-        logger.warning(
-            'no ACK of `PUT FILE` camerasend.py from workspace deployment'
-        )
+        logger.warning('no ACK of `PUT FILE` camerasend.py from workspace deployment')
         return
 
     addon_config['status'] = 'active'
@@ -401,7 +386,7 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
             )
             .one()
         )
@@ -434,9 +419,7 @@ async def addon_cam_start_job(eacommand, user, instance_id, token):
             await asyncio.sleep(1)
         blob = red.get(msg_id)
         if blob is None or blob == b'NACK':
-            logger.warning(
-                'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-            )
+            logger.warning(f'no ACK of `EXEC INSIDE` {argv} from workspace deployment')
             return
 
 
@@ -446,7 +429,7 @@ async def addon_cam_stop_job(user, instance_id, eacommand=None):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
             )
             .one()
         )
@@ -469,17 +452,13 @@ async def addon_cam_stop_job(user, instance_id, eacommand=None):
 
     elif instance_status not in ['READY', 'TERMINATED']:
         logger.warning(
-            'instance {}, so cannot kill remote device-sharing client if it exists'.format(
-                instance_status
-            )
+            f'instance {instance_status}, so cannot kill remote device-sharing client if it exists'
         )
 
     elif instance_status == 'READY':
         if eacommand is None:
             logger.error(
-                'called on instance {} with eacommand None when status READY'.format(
-                    instance_id
-                )
+                f'called on instance {instance_id} with eacommand None when status READY'
             )
             return
 
@@ -506,9 +485,7 @@ async def addon_cam_stop_job(user, instance_id, eacommand=None):
             await asyncio.sleep(1)
         blob = red.get(msg_id)
         if blob is None or blob == b'NACK':
-            logger.warning(
-                'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(argv)
-            )
+            logger.warning(f'no ACK of `EXEC INSIDE` {argv} from workspace deployment')
             return
 
     with rrdb.create_session_context() as session:
@@ -516,7 +493,7 @@ async def addon_cam_stop_job(user, instance_id, eacommand=None):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
             )
             .one()
         )
@@ -566,7 +543,7 @@ async def status_addon_cam(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -578,7 +555,7 @@ async def status_addon_cam(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(instance.deploymentid)
+                == f'{instance.deploymentid}:hscam'
             )
         )
         row = query.one_or_none()
@@ -660,7 +637,7 @@ async def remove_addon_cam(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
         )
     )
 
@@ -671,7 +648,7 @@ async def remove_addon_cam(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(instance.deploymentid)
+                == f'{instance.deploymentid}:hscam'
             )
         )
         row = query.one_or_none()
@@ -762,7 +739,7 @@ async def addon_cam_upload(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == payload['sub'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam',
         )
     )
     row = query.one_or_none()
@@ -791,7 +768,7 @@ async def addon_cam_upload(request):
     await ws.prepare(request)
     logger.info('opened WebSocket connection')
 
-    handle = '{}:cam:{}'.format(instance_id, camera_id)
+    handle = f'{instance_id}:cam:{camera_id}'
     try:
         async for msg in ws:
             if msg.type == aiohttp.WSMsgType.TEXT:
@@ -885,7 +862,7 @@ async def addon_cam_stream(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam')
     )
     if 'in' not in payload:
         query = query.filter(rrdb.ActiveAddon.user == payload['sub'])
@@ -896,7 +873,7 @@ async def addon_cam_stream(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(instance.deploymentid)
+                == f'{instance.deploymentid}:hscam'
             )
         )
         row = query.one_or_none()
@@ -939,7 +916,7 @@ async def addon_cam_stream(request):
             )
 
     else:
-        handle = '{}:cam:{}'.format(instance_id, camera_id)
+        handle = f'{instance_id}:cam:{camera_id}'
 
     sender_task = request.app.loop.create_task(
         addon_cam_sender_job(handle, request.app['red'], ws.send_str)
@@ -947,10 +924,7 @@ async def addon_cam_stream(request):
     if hscam:
         request.app.loop.create_task(addon_hscam_mon(instance_id, ws))
     async for msg in ws:
-        if msg.type == aiohttp.WSMsgType.CLOSED:
-            break
-
-        elif msg.type == aiohttp.WSMsgType.ERROR:
+        if msg.type == aiohttp.WSMsgType.CLOSED or msg.type == aiohttp.WSMsgType.ERROR:
             break
 
     sender_task.cancel()
@@ -1033,7 +1007,7 @@ async def apply_addon_cam(request):
             .query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:hscam'.format(instance.deploymentid)
+                == f'{instance.deploymentid}:hscam'
             )
         )
         row = query.one_or_none()
@@ -1055,7 +1029,7 @@ async def apply_addon_cam(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(rrdb.ActiveAddon.instanceid_with_addon == '{}:cam'.format(instance_id))
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cam')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -1080,7 +1054,7 @@ async def apply_addon_cam(request):
         'status': initial_status,  # status \in {active, starting, stopping}
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:cam'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:cam',
         user=data['user'],
         config=json.dumps(config),
     )

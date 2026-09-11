@@ -3,7 +3,6 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
-import asyncio
 import uuid
 
 from fixtures import (
@@ -17,8 +16,8 @@ from fixtures import (
 
 # @patch('rerobots_apiw.tasks.register_new_user_provided.delay')
 async def test_register(client, api_token, api_token_su):
-    headers = {'Authorization': 'Bearer {}'.format(api_token)}
-    su_headers = {'Authorization': 'Bearer {}'.format(api_token_su)}
+    headers = {'Authorization': f'Bearer {api_token}'}
+    su_headers = {'Authorization': f'Bearer {api_token_su}'}
 
     resp = await client.get('/hardshare/list')
     assert resp.status == 400
@@ -81,8 +80,8 @@ async def test_dissolve(hardshare_registered_wd):
 
 
 async def test_update(client, api_token, api_token_su):
-    headers = {'Authorization': 'Bearer {}'.format(api_token)}
-    su_headers = {'Authorization': 'Bearer {}'.format(api_token_su)}
+    headers = {'Authorization': f'Bearer {api_token}'}
+    su_headers = {'Authorization': f'Bearer {api_token_su}'}
 
     resp = await client.post('/hardshare/register', headers=headers)
     assert resp.status == 200
@@ -105,33 +104,33 @@ async def test_update(client, api_token, api_token_su):
         },
     }
     resp = await client.post(
-        '/hardshare/wd/{}'.format(wdeployment_id), json=payload, headers=headers
+        f'/hardshare/wd/{wdeployment_id}', json=payload, headers=headers
     )
     assert resp.status == 200
 
     # try again with errors in payload
     payload['supported_addons'] = ['fake']
     resp = await client.post(
-        '/hardshare/wd/{}'.format(wdeployment_id), json=payload, headers=headers
+        f'/hardshare/wd/{wdeployment_id}', json=payload, headers=headers
     )
     assert resp.status == 400
 
     payload['supported_addons'] = ['cam', 'mistyproxy']
     resp = await client.post(
-        '/hardshare/wd/{}'.format(wdeployment_id), json=payload, headers=headers
+        f'/hardshare/wd/{wdeployment_id}', json=payload, headers=headers
     )
     assert resp.status == 200
 
     payload['supported_addons'] = ['mistyproxy']
     payload['addons_config'] = {'mistyproxy': 1}
     resp = await client.post(
-        '/hardshare/wd/{}'.format(wdeployment_id), json=payload, headers=headers
+        f'/hardshare/wd/{wdeployment_id}', json=payload, headers=headers
     )
     assert resp.status == 400
 
     payload['supported_addons'] = ['mistyproxy']
     payload['addons_config'] = dict()
     resp = await client.post(
-        '/hardshare/wd/{}'.format(wdeployment_id), json=payload, headers=headers
+        f'/hardshare/wd/{wdeployment_id}', json=payload, headers=headers
     )
     assert resp.status == 400

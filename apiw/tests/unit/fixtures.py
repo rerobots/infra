@@ -3,24 +3,21 @@ SCL <scott@rerobots>
 Copyright (C) 2019 rerobots, Inc.
 """
 
-import asyncio
 import copy
-import unittest.mock
 import os
 import os.path
 import time
 import uuid
 
-import pytest
-
 import jwt
+import pytest
 import redis
 import sqlalchemy
 
 import rerobots_apiw.db as rrdb
+from rerobots_apiw import tasks
 from rerobots_apiw.factory import create_application
 from rerobots_apiw.settings import DB_URL
-from rerobots_apiw import tasks
 from rerobots_apiw.util import now
 
 
@@ -32,7 +29,7 @@ def cleardb():
         if attr[0] == '_':
             continue
         if hasattr(getattr(rrdb, attr), '__tablename__'):
-            tablenames.append(getattr(getattr(rrdb, attr), '__tablename__'))
+            tablenames.append(getattr(rrdb, attr).__tablename__)
     trans = conn.begin()
     for tablename in tablenames:
         try:
@@ -110,7 +107,7 @@ def mock_channels(monkeypatch):
             )
 
         else:
-            raise Exception('Unexpected eacommand_rx: {}'.format(payload))
+            raise Exception(f'Unexpected eacommand_rx: {payload}')
 
     def send_to_thportal(self, payload):
         pass
@@ -268,8 +265,8 @@ def wd_null_dissolved(wd_null):
 
 @pytest.fixture
 async def hardshare_registered_wd(client, api_token, api_token_su):
-    headers = {'Authorization': 'Bearer {}'.format(api_token)}
-    su_headers = {'Authorization': 'Bearer {}'.format(api_token_su)}
+    headers = {'Authorization': f'Bearer {api_token}'}
+    su_headers = {'Authorization': f'Bearer {api_token_su}'}
 
     resp = await client.get('/hardshare/list')
     assert resp.status == 400

@@ -18,7 +18,6 @@ from .. import db as rrdb
 from .. import proxy_tasks
 from ..requestproc import process_headers
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -83,18 +82,14 @@ async def apply_addon_vscode(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vscode'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vscode')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
     if query.count() > 0:
         return web.json_response(
             {
-                'error_message': 'add-on `vscode` already applied to instance {}'.format(
-                    instance_id
-                )
+                'error_message': f'add-on `vscode` already applied to instance {instance_id}'
             },
             status=503,  # Service Unavailable
             headers=data['response_headers'],
@@ -114,7 +109,7 @@ async def apply_addon_vscode(request):
         'status': 'starting',  # status \in {active, starting, stopping}
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:vscode'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:vscode',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -163,9 +158,7 @@ async def status_addon_vscode(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vscode'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vscode')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -221,7 +214,7 @@ async def remove_addon_vscode(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vscode'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vscode',
         )
     )
 

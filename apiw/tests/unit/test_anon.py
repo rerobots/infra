@@ -3,8 +3,6 @@ SCL <scott@rerobots>
 Copyright (C) 2020 rerobots, Inc.
 """
 
-import jwt
-
 from fixtures import client, api_token
 
 

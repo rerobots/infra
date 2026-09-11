@@ -8,14 +8,13 @@ import os
 import subprocess
 import tempfile
 
-from celery.utils.log import get_task_logger
 import pika
+from celery.utils.log import get_task_logger
 
-from .celery import app as capp
 from . import db as rrdb
-from .util import get_container_addr
 from . import settings
-
+from .celery import app as capp
+from .util import get_container_addr
 
 logger = get_task_logger(__name__)
 
@@ -54,7 +53,7 @@ def create_sshtun(instance_id, pubkey, request_id=None, proxy_mode=False):
                 session.commit()
             else:
                 logger.warning(
-                    'expected Docker container {} not found'.format(sshtun_container_id)
+                    f'expected Docker container {sshtun_container_id} not found'
                 )
 
         sshtun_container_id = None
@@ -77,9 +76,7 @@ def create_sshtun(instance_id, pubkey, request_id=None, proxy_mode=False):
             if caps_add:
                 run_command.extend(caps_add)
             run_command.append('rerobots-infra/th-sshtunnel')
-            cp = subprocess.run(
-                run_command, stdout=subprocess.PIPE, universal_newlines=True
-            )
+            cp = subprocess.run(run_command, stdout=subprocess.PIPE, text=True)
             cp.check_returncode()
             sshtun_container_id = cp.stdout.strip()
 
@@ -116,7 +113,7 @@ def create_sshtun(instance_id, pubkey, request_id=None, proxy_mode=False):
                     fname,
                     sshtun_container_id + ':/root/.ssh/authorized_keys',
                 ],
-                universal_newlines=True,
+                text=True,
             )
             os.unlink(fname)
             cp.check_returncode()
@@ -128,7 +125,7 @@ def create_sshtun(instance_id, pubkey, request_id=None, proxy_mode=False):
             instance.th_hostname = th_hostname
 
         except Exception as err:
-            logger.error('caught {}: {}'.format(type(err), err))
+            logger.error(f'caught {type(err)}: {err}')
             if sshtun_container_id is not None:
                 subprocess.check_call(
                     [settings.TH_CONTAINER_PROVIDER, 'rm', '-f', sshtun_container_id]
@@ -141,7 +138,7 @@ def create_sshtun(instance_id, pubkey, request_id=None, proxy_mode=False):
         )
         eacommand_conn = pika.BlockingConnection(param)
         eacommand_chan = eacommand_conn.channel()
-        eax_name = 'eacommand.{}'.format(wdeployment_id)
+        eax_name = f'eacommand.{wdeployment_id}'
 
         result = {
             'command': 'RES',
@@ -183,5 +180,5 @@ def destroy_sshtun(instance_id):
                 )
             else:
                 logger.warning(
-                    'expected Docker container {} not found'.format(sshtun_container_id)
+                    f'expected Docker container {sshtun_container_id} not found'
                 )

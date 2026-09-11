@@ -10,20 +10,20 @@ SCL <scott@rerobots>
 Copyright (C) 2017 rerobots, Inc.
 """
 
-from ast import literal_eval
 import asyncio
 import base64
-from datetime import timedelta
 import json
 import logging
 import math
 import re
 import uuid
+from ast import literal_eval
+from datetime import timedelta
 
 import aiocache
-from aiohttp import web
 import jwt
 import sqlalchemy
+from aiohttp import web
 from sqlalchemy import not_, null
 
 from . import db as rrdb
@@ -32,14 +32,11 @@ from .requestproc import process_headers, rate_limit
 from .settings import CACHE_TTL
 from .util import now
 
-
 logger = logging.getLogger(__name__)
 
 
 class Error(Exception):
     """Error not otherwise specified"""
-
-    pass
 
 
 class WDeploymentNotFound(Error):
@@ -278,9 +275,7 @@ async def list_deployments(request):
                 waiting_ub = (
                     request['dbsession']
                     .query(rrdb.Reservation)
-                    .filter(
-                        rrdb.Reservation.rfilter == 'wd:{}'.format(row.deploymentid)
-                    )
+                    .filter(rrdb.Reservation.rfilter == f'wd:{row.deploymentid}')
                     .count()
                 )
                 current_count = (
@@ -305,7 +300,7 @@ async def list_deployments(request):
                         .query(rrdb.ActiveAddon)
                         .filter(
                             rrdb.ActiveAddon.instanceid_with_addon
-                            == '{}:hscam'.format(row.deploymentid)
+                            == f'{row.deploymentid}:hscam'
                         )
                         .one_or_none()
                     )
@@ -325,7 +320,7 @@ async def list_deployments(request):
             waiting_ub = (
                 request['dbsession']
                 .query(rrdb.Reservation)
-                .filter(rrdb.Reservation.rfilter == 'wd:{}'.format(row.deploymentid))
+                .filter(rrdb.Reservation.rfilter == f'wd:{row.deploymentid}')
                 .count()
             )
             if waiting_ub <= maxlen:
@@ -354,7 +349,7 @@ async def list_deployments(request):
                                 .query(rrdb.ActiveAddon)
                                 .filter(
                                     rrdb.ActiveAddon.instanceid_with_addon
-                                    == '{}:hscam'.format(row.deploymentid)
+                                    == f'{row.deploymentid}:hscam'
                                 )
                                 .one_or_none()
                             )
@@ -375,8 +370,7 @@ async def list_deployments(request):
         page_count = 1
     else:
         page_count = math.ceil(len(matches) / max_per_page)
-    if page > page_count:
-        page = page_count
+    page = min(page, page_count)
 
     if max_per_page > 0:
         matches = matches[(page - 1) * max_per_page : page * max_per_page]
@@ -867,7 +861,7 @@ async def make_new_vpnclient(request):
 def compute_queuelen(dbsession, wdeployment_id, get_current_rem=False):
     waiting_ub = (
         dbsession.query(rrdb.Reservation)
-        .filter(rrdb.Reservation.rfilter == 'wd:{}'.format(wdeployment_id))
+        .filter(rrdb.Reservation.rfilter == f'wd:{wdeployment_id}')
         .count()
     )
     current_instance = (

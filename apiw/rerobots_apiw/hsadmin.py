@@ -8,9 +8,8 @@ import logging
 from aiohttp import web
 
 from . import db as rrdb
-from .tasks import notify_hardshare_owners
 from .requestproc import process_headers
-
+from .tasks import notify_hardshare_owners
 
 logger = logging.getLogger(__name__)
 

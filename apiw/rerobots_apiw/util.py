@@ -4,14 +4,13 @@ Copyright (C) 2023 rerobots, Inc.
 """
 
 import asyncio
-from datetime import datetime, timezone
 import json
 import logging
 import subprocess
 import time
+from datetime import datetime, timezone
 
 from . import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -65,9 +64,7 @@ def get_container_addr(pid, timeout=5):
                 for net in cdata[0]['NetworkSettings']['Networks'].values():
                     addr_candidates.append(net['IPAddress'])
             for candidate in addr_candidates:
-                if addr is None:
-                    addr = candidate
-                elif addr == '127.0.0.1' or addr == '':
+                if addr is None or addr == '127.0.0.1' or addr == '':
                     addr = candidate
             if addr == '' or addr is None:
                 addr = '127.0.0.1'

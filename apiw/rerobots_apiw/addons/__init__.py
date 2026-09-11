@@ -5,14 +5,15 @@ SCL <scott@rerobots>
 Copyright (C) 2018-2022 rerobots, Inc.
 """
 
+from . import fulldevel, minidevel
 from .cam import (
-    addon_cam_stream,
-    apply_addon_cam,
-    status_addon_cam,
     addon_cam_snapshot,
     addon_cam_stop_job,
+    addon_cam_stream,
     addon_cam_upload,
+    apply_addon_cam,
     remove_addon_cam,
+    status_addon_cam,
 )
 from .cmd import (
     addon_cmd_stop_job,
@@ -47,10 +48,6 @@ from .vnc import (
     remove_addon_vnc,
     status_addon_vnc,
 )
-
-from . import fulldevel
-from . import minidevel
-
 
 __all__ = [
     'addon_cam_snapshot',

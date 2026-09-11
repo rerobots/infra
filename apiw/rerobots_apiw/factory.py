@@ -11,19 +11,26 @@ try:
 except ImportError:
     from asyncio import get_event_loop as get_running_loop
 
-from aiohttp import web
 import redis
+from aiohttp import web
 
-from . import addons
-from . import anon, commands, cap, ci, instances, hardshare, users
-from . import hsadmin
-from . import mgmt
-from . import mock
-from .channels import PortAccessManager, EACommandChannel
+from . import (
+    addons,
+    anon,
+    cap,
+    ci,
+    commands,
+    hardshare,
+    hsadmin,
+    instances,
+    mgmt,
+    mock,
+    settings,
+    users,
+)
 from . import db as rrdb
+from .channels import EACommandChannel, PortAccessManager
 from .init import init_logging, init_sentry
-from . import settings
-
 
 logger = logging.getLogger(__name__)
 

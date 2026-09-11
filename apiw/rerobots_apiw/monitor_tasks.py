@@ -13,7 +13,6 @@ from .notify import to_admins
 from .tasks import terminate_instance
 from .util import now
 
-
 logger = get_task_logger(__name__)
 
 

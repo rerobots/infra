@@ -4,15 +4,13 @@ SCL <scott@rerobots>
 Copyright (C) 2022 rerobots, Inc.
 """
 
-from datetime import timedelta
 import json
-import os
 import uuid
+from datetime import timedelta
 
 import rerobots_apiw.db as rrdb
 from rerobots_apiw.tasks import _create_new_wdeployment_main
 from rerobots_apiw.util import now
-
 
 username = 'staging_user'
 

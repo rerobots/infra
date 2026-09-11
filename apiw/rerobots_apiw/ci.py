@@ -11,14 +11,12 @@ import os
 import time
 
 import aiohttp
-from aiohttp import web
 import jwt
+from aiohttp import web
 
 from . import db as rrdb
 from .requestproc import process_headers
-from .settings import PRIVATE_KEY
-from .settings import DEBUG
-
+from .settings import DEBUG, PRIVATE_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +96,7 @@ async def post_ci_job(request):
         {'exp': int(now) + 10, 'nbf': int(now) - 1}, key=PRIVATE_KEY, algorithm='RS256'
     )
     headers = {
-        'Authorization': 'Bearer {}'.format(tok),
+        'Authorization': f'Bearer {tok}',
     }
 
     payload = {
@@ -122,9 +120,7 @@ async def post_ci_job(request):
                 return web.Response(status=500, headers=data['response_headers'])
     except aiohttp.client_exceptions.ClientConnectorError:
         if DEBUG:
-            logger.warning(
-                'connect refused at {}; ignoring because DEBUG'.format(newbuild_url)
-            )
+            logger.warning(f'connect refused at {newbuild_url}; ignoring because DEBUG')
         else:
             raise
 
@@ -166,7 +162,7 @@ async def create_project(request):
         {'exp': int(now) + 10, 'nbf': int(now) - 1}, key=PRIVATE_KEY, algorithm='RS256'
     )
     headers = {
-        'Authorization': 'Bearer {}'.format(tok),
+        'Authorization': f'Bearer {tok}',
     }
     payload = {
         'name': pname,
@@ -184,7 +180,7 @@ async def create_project(request):
     except aiohttp.client_exceptions.ClientConnectorError:
         if DEBUG:
             logger.warning(
-                'connect refused at {}; ignoring because DEBUG'.format(registration_url)
+                f'connect refused at {registration_url}; ignoring because DEBUG'
             )
         else:
             raise

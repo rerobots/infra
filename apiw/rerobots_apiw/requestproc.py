@@ -12,9 +12,8 @@ import time
 import geoip2.database
 import jwt
 
-from .settings import WEBUI_PUBLIC_KEY
 from . import db as rrdb
-
+from .settings import WEBUI_PUBLIC_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +132,7 @@ def process_headers(request, token=None):
         if token is None:
             authheader = request.headers['AUTHORIZATION']
         else:
-            authheader = 'Bearer {}'.format(token)
+            authheader = f'Bearer {token}'
         data['payload'] = checktoken(
             dbsession=request['dbsession'], authheader=authheader, origin=origin
         )
@@ -177,7 +176,7 @@ def rate_limit(request, jwt_payload=None, origin=None):
     else:
         ttl_origin = 'tok://' + jwt_payload['sig_prefix']
         credit = 3600
-    logger.debug('rate-limiting update for origin {}'.format(ttl_origin))
+    logger.debug(f'rate-limiting update for origin {ttl_origin}')
     if not request.app['red'].exists(ttl_origin):
         request.app['red'].set(ttl_origin, int(time.time()) + 3600)
         request.app['red'].set(ttl_origin + '-ratelimit-remaining', credit)

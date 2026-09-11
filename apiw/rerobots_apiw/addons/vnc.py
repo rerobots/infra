@@ -11,7 +11,6 @@ from .. import db as rrdb
 from ..requestproc import process_headers
 from ..util import create_subprocess_exec
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -21,7 +20,7 @@ async def addon_vnc_stop_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
             )
             .one()
         )
@@ -64,7 +63,7 @@ async def addon_vnc_stop_job(user, instance_id):
             '-kill',
             ':1',
         ]
-        logger.info('run: {}'.format(vncserver_cmd))
+        logger.info(f'run: {vncserver_cmd}')
 
         vncserver_p = await create_subprocess_exec(*vncserver_cmd)
         rc = await vncserver_p.wait()
@@ -79,9 +78,7 @@ async def addon_vnc_stop_job(user, instance_id):
             os.waitpid(pid, 0)
         except Exception as err:
             logger.warning(
-                'failed to kill {}. does that process exist? ({}: {})'.format(
-                    pid, type(err), err
-                )
+                f'failed to kill {pid}. does that process exist? ({type(err)}: {err})'
             )
     addon_config['pid'] = []
     addon_config['status'] = 'ready'
@@ -90,7 +87,7 @@ async def addon_vnc_stop_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
             )
             .one()
         )
@@ -105,8 +102,7 @@ async def addon_vnc_waitdelete_job(user, instance_id):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:vnc'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
                 )
                 .one_or_none()
             )
@@ -130,8 +126,7 @@ async def addon_vnc_start_job(user, instance_id):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:vnc'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
                 )
                 .one()
             )
@@ -147,9 +142,7 @@ async def addon_vnc_start_job(user, instance_id):
             port = instance.listening_port
 
         if instance_status == 'READY' and len(ipv4) > 0:
-            logger.info(
-                'instance READY with IPv4 addr {} and port {}'.format(ipv4, port)
-            )
+            logger.info(f'instance READY with IPv4 addr {ipv4} and port {port}')
             break
         await asyncio.sleep(1)
 
@@ -160,7 +153,7 @@ async def addon_vnc_start_job(user, instance_id):
         )
 
     tmp_fd, unixsocket = tempfile.mkstemp()
-    logger.info('for instance {}, unix socket path: {}'.format(instance_id, unixsocket))
+    logger.info(f'for instance {instance_id}, unix socket path: {unixsocket}')
     os.close(tmp_fd)
     os.unlink(unixsocket)
 
@@ -185,7 +178,7 @@ async def addon_vnc_start_job(user, instance_id):
         '{}@{}'.format(addon_config['user'], ipv4),
         'vncserver',
     ]
-    logger.info('run: {}'.format(vncserver_cmd))
+    logger.info(f'run: {vncserver_cmd}')
     vncserver_p = await create_subprocess_exec(*vncserver_cmd)
     rc = await vncserver_p.wait()
     if rc != 0:
@@ -202,14 +195,14 @@ async def addon_vnc_start_job(user, instance_id):
         '-T',
         '-N',
         '-L',
-        '{}:127.0.0.1:5901'.format(unixsocket),
+        f'{unixsocket}:127.0.0.1:5901',
         '-i',
         privatekey_path,
         '-p',
         str(port),
         '{}@{}'.format(addon_config['user'], ipv4),
     ]
-    logger.info('run: {}'.format(sshtunnel_cmd))
+    logger.info(f'run: {sshtunnel_cmd}')
     sshtunnel_p = await create_subprocess_exec(*sshtunnel_cmd)
 
     vnc_listenport = None
@@ -225,18 +218,18 @@ async def addon_vnc_start_job(user, instance_id):
                     '--cert=fullchain.pem',
                     '--key=privkey.pem',
                     '--ssl-only',
-                    '--unix-target={}'.format(unixsocket),
+                    f'--unix-target={unixsocket}',
                     '--auth-plugin=rerobots_websockify.RerobotsAuthPlugin',
                     '--auth-source=\'{"user": "' + user + '"}\'',
                     str(candidate),
                 ]
             )
-            logger.info('run: {}'.format(websockify_cmd))
+            logger.info(f'run: {websockify_cmd}')
             websockify_p = await create_subprocess_exec(
                 *[
                     'bash',
                     '-c',
-                    'source PY3/bin/activate && exec {}'.format(websockify_cmd),
+                    f'source PY3/bin/activate && exec {websockify_cmd}',
                 ]
             )
             try:
@@ -247,16 +240,12 @@ async def addon_vnc_start_job(user, instance_id):
 
     if vnc_listenport is None:
         logger.error(
-            'error: no available add-on port numbers for instance {}'.format(
-                instance_id
-            )
+            f'error: no available add-on port numbers for instance {instance_id}'
         )
         return
     else:
         logger.info(
-            'add-on port number for instance {} will be {}'.format(
-                instance_id, vnc_listenport
-            )
+            f'add-on port number for instance {instance_id} will be {vnc_listenport}'
         )
 
     addon_config['pid'] = [sshtunnel_p.pid, websockify_p.pid]
@@ -266,7 +255,7 @@ async def addon_vnc_start_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
             )
             .one()
         )
@@ -350,16 +339,14 @@ async def apply_addon_vnc(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
         )
     )
     if query.count() > 0:
         return web.Response(
             body=json.dumps(
                 {
-                    'error_message': 'add-on `vnc` already applied to instance {}'.format(
-                        instance_id
-                    )
+                    'error_message': f'add-on `vnc` already applied to instance {instance_id}'
                 }
             ),
             status=503,  # Service Unavailable
@@ -374,7 +361,7 @@ async def apply_addon_vnc(request):
         'pid': [],
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:vnc'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:vnc',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -422,7 +409,7 @@ async def status_addon_vnc(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
         )
     )
     row = query.one_or_none()
@@ -487,7 +474,7 @@ async def addon_start_vnc(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
         )
     )
     row = query.one_or_none()
@@ -567,7 +554,7 @@ async def addon_stop_vnc(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
         )
     )
     row = query.one_or_none()
@@ -647,7 +634,7 @@ async def remove_addon_vnc(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:vnc'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:vnc',
         )
     )
 

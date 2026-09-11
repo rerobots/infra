@@ -3,14 +3,12 @@ SCL <scott@rerobots>
 Copyright (C) 2018 rerobots, Inc.
 """
 
-from celery.utils.log import get_task_logger
 import requests
+from celery.utils.log import get_task_logger
 
-from .celery import app as capp
 from . import db as rrdb
-from .settings import MAILGUN_API_KEY, SLACK_WEBHOOKS
-from .settings import ADMINS
-
+from .celery import app as capp
+from .settings import ADMINS, MAILGUN_API_KEY, SLACK_WEBHOOKS
 
 logger = get_task_logger(__name__)
 
@@ -30,19 +28,15 @@ def send_raw_email(to, subject, body):
         'text': body,
     }
     try:
-        res = requests.post(
-            'https://api:{}@{}'.format(MAILGUN_API_KEY, base_uri), data=payload
-        )
+        res = requests.post(f'https://api:{MAILGUN_API_KEY}@{base_uri}', data=payload)
         if not res.ok:
             logger.warning('POST request failed to Mailgun')
         else:
             logger.info('sent successfully')
     except Exception as err:
         logger.error(
-            'caught {EXCEPTMSG} ({EXCEPTTYPE}): caught exception when trying to send raw email: '
-            '(to: "{TO}", subject: "{SUBJ}")'.format(
-                EXCEPTMSG=err, EXCEPTTYPE=type(err), TO=to, SUBJ=subject
-            )
+            f'caught {err} ({type(err)}): caught exception when trying to send raw email: '
+            f'(to: "{to}", subject: "{subject}")'
         )
         raise
 
@@ -103,4 +97,4 @@ def new_mailinglist_subscriber(topic, name, emailaddr, why_interested=None):
         if not res.ok:
             logger.error('failed to post to Slack webhook')
     except Exception as err:
-        logger.error('caught {}: {}'.format(type(err), err))
+        logger.error(f'caught {type(err)}: {err}')

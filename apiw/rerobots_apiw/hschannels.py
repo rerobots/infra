@@ -21,7 +21,6 @@ import sqlalchemy
 from . import db as rrdb
 from . import settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +48,7 @@ class CommandChannel:
         self.expected_resp = dict()
         self.host = settings.AMQP_HOST
         self.port = settings.AMQP_PORT
-        self._exchange_name = 'eacommand.{}'.format(self.wdeployment_id)
+        self._exchange_name = f'eacommand.{self.wdeployment_id}'
         self.received_acks = dict()
         self.channel = None
         self._closing = False
@@ -69,9 +68,7 @@ class CommandChannel:
         if self._closing:
             return
         logger.warning(
-            'connection to RabbitMQ server closed with {}: {}; restarting'.format(
-                type(err), err
-            )
+            f'connection to RabbitMQ server closed with {type(err)}: {err}; restarting'
         )
         self.start()
 
@@ -105,7 +102,7 @@ class CommandChannel:
         )
 
     def _start_consuming(self, okframe):
-        logger.info('starting to consume on queue {}'.format(self._queue_name))
+        logger.info(f'starting to consume on queue {self._queue_name}')
         self.channel.add_on_cancel_callback(self.close_via_cancel)
         self._consumer = self.channel.basic_consume(
             queue=self._queue_name,
@@ -147,13 +144,13 @@ class CommandChannel:
         self._stop_consuming()
 
     def send_to_apiw(self, payload):
-        logger.debug('eacommand_rx: {}'.format(json.dumps(payload)))
+        logger.debug(f'eacommand_rx: {json.dumps(payload)}')
         self.channel.basic_publish(
             exchange='', routing_key='eacommand_rx', body=json.dumps(payload)
         )
 
     async def handle_response(self, msg):
-        logger.debug('handle_response(msg={})'.format(msg))
+        logger.debug(f'handle_response(msg={msg})')
         if 'mi' not in msg or not isinstance(msg['mi'], str):
             logger.error(
                 'CommandChannel.handle_response: '
@@ -205,11 +202,9 @@ class CommandChannel:
                     )
                 elif msg['cmd'] != v['awsent']:
                     logger.error(
-                        (
-                            'received NACK from client in response to INSTANCE_DESTROY for '
-                            'instance {}, '
-                            'but ACK was already sent to APIW'.format(v['instance_id'])
-                        )
+                        'received NACK from client in response to INSTANCE_DESTROY for '
+                        'instance {}, '
+                        'but ACK was already sent to APIW'.format(v['instance_id'])
                     )
                 else:
                     self.prior_instance = (
@@ -227,7 +222,7 @@ class CommandChannel:
             )
 
     def handle_incoming_message(self, channel, method, prop, body):
-        logger.debug('received: {}'.format(body))
+        logger.debug(f'received: {body}')
         msg = json.loads(str(body, encoding='utf-8'))
         self.process_command(msg)
 
@@ -236,9 +231,7 @@ class CommandChannel:
             logger.warning('received message that lacks `command`')
             return
         if 'did' not in msg and 'iid' not in msg:
-            logger.warning(
-                'received message that lacks `did` and `iid`: {}'.format(msg)
-            )
+            logger.warning(f'received message that lacks `did` and `iid`: {msg}')
             return
 
         if msg['command'] not in ['STATUS', 'ACK']:
@@ -287,7 +280,7 @@ class CommandChannel:
                     else:
                         inst = None
                 except Exception as err:
-                    logger.error('caught {}: {}'.format(type(err), err))
+                    logger.error(f'caught {type(err)}: {err}')
                     return
 
             if inst is None and wd is None:
@@ -298,9 +291,7 @@ class CommandChannel:
                 )
                 return
 
-            if not self.red.hexists(self.rkey, 'ad'):
-                status = 'NONE'
-            elif inst is None:
+            if not self.red.hexists(self.rkey, 'ad') or inst is None:
                 status = 'NONE'
             else:
                 status = instance_status
@@ -403,7 +394,7 @@ class CommandChannel:
             )
             if inst is None:
                 logger.error(
-                    'request to send status for unknown instance {}'.format(instance_id)
+                    f'request to send status for unknown instance {instance_id}'
                 )
                 return
             wdeployment_id = inst.deploymentid
@@ -452,7 +443,7 @@ class ConnectionChannel:
         self.red = red
         self.host = settings.AMQP_HOST
         self.port = settings.AMQP_PORT
-        self._queue_name = 'eatunnel.{}'.format(self.wdeployment_id)
+        self._queue_name = f'eatunnel.{self.wdeployment_id}'
         self.thportalq = None
         self.current_th = None
         self.thvpnq = asyncio.Queue()
@@ -476,9 +467,7 @@ class ConnectionChannel:
         if self._closing:
             return
         logger.warning(
-            'connection to RabbitMQ server closed with {}: {}; restarting'.format(
-                type(err), err
-            )
+            f'connection to RabbitMQ server closed with {type(err)}: {err}; restarting'
         )
         self.start()
 
@@ -500,7 +489,7 @@ class ConnectionChannel:
         )
 
     def _start_consuming(self, okframe):
-        logger.info('starting to consume on queue {}'.format(self._queue_name))
+        logger.info(f'starting to consume on queue {self._queue_name}')
         self.channel.add_on_cancel_callback(self.close_via_cancel)
         self._consumer = self.channel.basic_consume(
             queue=self._queue_name,
@@ -547,7 +536,7 @@ class ConnectionChannel:
         )
 
     async def handle_response(self, msg):
-        logger.debug('handle_response(msg={})'.format(msg))
+        logger.debug(f'handle_response(msg={msg})')
         if 'mi' not in msg or not isinstance(msg['mi'], str):
             logger.error(
                 'ConnectionChannel.handle_response: '
@@ -590,7 +579,7 @@ class ConnectionChannel:
             logger.warning('received response for unknown command {}'.format(v['cmd']))
 
     def handle_incoming_message(self, channel, method, prop, body):
-        logger.debug('received on channel thportal: {}'.format(body))
+        logger.debug(f'received on channel thportal: {body}')
         msg = json.loads(str(body, encoding='utf-8'))
         if 'did' not in msg or msg['did'] != self.wdeployment_id:
             return
@@ -640,7 +629,7 @@ class ConnectionChannel:
         elif (msg['command'] == 'ACK' or msg['command'] == 'NACK') and (
             'req' in msg and msg['req'][:3] == 'VPN'
         ):
-            logger.debug('received VPN-related message: {}'.format(msg))
+            logger.debug(f'received VPN-related message: {msg}')
             self.thvpnq.put_nowait(msg)
 
         elif msg['command'] == 'CHECK ASSOCIATED':
@@ -658,7 +647,7 @@ class ConnectionChannel:
                     )
                     instance_id = inst.instanceid if inst is not None else None
                 except Exception as err:
-                    logger.warning('caught {}: {}'.format(type(err), err))
+                    logger.warning(f'caught {type(err)}: {err}')
                     instance_id = None
             if instance_id is None or ('inid' in msg and instance_id != msg['inid']):
                 payload = {
@@ -716,10 +705,7 @@ class ConnectionChannel:
                     await asyncio.sleep(1)
                 if self.thportalq.empty():
                     logger.info(
-                        'timed out waiting for ACCEPT from {ESENDER} to my REQUEST; queue size is {QSIZE}'.format(
-                            ESENDER=outstanding_request,
-                            QSIZE=self.thportalq.qsize(),
-                        )
+                        f'timed out waiting for ACCEPT from {outstanding_request} to my REQUEST; queue size is {self.thportalq.qsize()}'
                     )
                     outstanding_request = None
                     continue
@@ -857,7 +843,7 @@ class ConnectionChannel:
                 logger.warning('failed to create VPN. trying again...')
         if not confirmed:
             self.status = 'INIT_FAIL'
-            logger.info('marked instance as {}'.format(self.status))
+            logger.info(f'marked instance as {self.status}')
             return
 
     async def get_vpn_newclient(self):
@@ -893,5 +879,5 @@ class ConnectionChannel:
                 logger.warning('failed to make new VPN client. trying again...')
         if not confirmed:
             self.status = 'INIT_FAIL'
-            logger.info('marked instance as {}'.format(self.status))
+            logger.info(f'marked instance as {self.status}')
             return

@@ -7,18 +7,15 @@ import asyncio
 import json
 import logging
 import time
-
 from typing import Any
 
 import pika
 import pika.adapters.asyncio_connection
 import redis
 
-from .util import now
 from . import db as rrdb
-from . import tasks, tunnel_hub_tasks
-from . import settings
-
+from . import settings, tasks, tunnel_hub_tasks
+from .util import now
 
 RerobotsChannel: Any  # TODO: narrow type
 if settings.DEBUG:
@@ -47,7 +44,7 @@ class PortAccessManager(RerobotsChannel):
         self.send_message('th', msg)
 
     def handle_incoming_message(self, channel, method, prop, body):
-        logger.debug('received on channel portaccess: {}'.format(body))
+        logger.debug(f'received on channel portaccess: {body}')
         msg = json.loads(str(body, encoding='utf-8'))
         assert 'message_id' in msg
         if msg['command'] == 'NACK':
@@ -87,9 +84,7 @@ class EACommandChannel:
         if self._closing:
             return
         logger.warning(
-            'connection to RabbitMQ server closed with {}: {}; restarting'.format(
-                type(err), err
-            )
+            f'connection to RabbitMQ server closed with {type(err)}: {err}; restarting'
         )
         self.start()
 
@@ -110,7 +105,7 @@ class EACommandChannel:
         )
 
     def _start_consuming(self, okframe):
-        logger.info('starting to consume on queue {}'.format(self._queue_name))
+        logger.info(f'starting to consume on queue {self._queue_name}')
         self._consumer = self.channel.basic_consume(
             queue=self._queue_name,
             on_message_callback=self.handle_incoming_message,
@@ -169,7 +164,7 @@ class EACommandChannel:
         )
 
     def handle_incoming_message(self, channel, method, prop, body):
-        logger.debug('received: {}'.format(body))
+        logger.debug(f'received: {body}')
         msg = json.loads(str(body, encoding='utf-8'))
         assert 'command' in msg
         self.process_rx(msg)
@@ -181,16 +176,7 @@ class EACommandChannel:
                 if msg['command'] == 'ACK':
                     self.red.hset(msg['message_id'], 'client_id', msg['client_id'])
                     self.red.hset(msg['message_id'], 'ovpn_config', msg['ovpn'])
-            elif msg['req'] == 'INSTANCE LAUNCH':
-                if (
-                    self.red.exists(msg['message_id'])
-                    and self.red.type(msg['message_id']) != b'hash'
-                ):
-                    self.red.delete(msg['message_id'])
-                self.red.hset(msg['message_id'], 'result', msg['command'])
-                if 'st' in msg:
-                    self.red.hset(msg['message_id'], 'st', msg['st'])
-            elif msg['req'] == 'INSTANCE DESTROY':
+            elif msg['req'] == 'INSTANCE LAUNCH' or msg['req'] == 'INSTANCE DESTROY':
                 if (
                     self.red.exists(msg['message_id'])
                     and self.red.type(msg['message_id']) != b'hash'

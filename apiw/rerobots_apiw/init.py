@@ -9,6 +9,7 @@ import os
 from socket import getfqdn
 
 from rerobots_infra import RLogSenderHandler
+
 from . import __version__
 from .settings import DEBUG, SENTRY_DSN
 
@@ -41,13 +42,11 @@ def init_logging():
     logger = logging.getLogger('rerobots_apiw')
     logger.setLevel(logging.INFO)
     loghandler = logging.handlers.WatchedFileHandler(
-        filename='rerobots_apiw.{}.log'.format(os.getpid()), mode='a'
+        filename=f'rerobots_apiw.{os.getpid()}.log', mode='a'
     )
     loghandler.setFormatter(
         logging.Formatter(
-            '%(asctime)s ; %(name)s.%(funcName)s (%(levelname)s) (pid: {}); %(message)s'.format(
-                os.getpid()
-            )
+            f'%(asctime)s ; %(name)s.%(funcName)s (%(levelname)s) (pid: {os.getpid()}); %(message)s'
         )
     )
     loghandler.setLevel(logging.DEBUG)
@@ -55,9 +54,7 @@ def init_logging():
     stdouthandler = logging.StreamHandler()
     stdouthandler.setFormatter(
         logging.Formatter(
-            '%(asctime)s ; %(name)s.%(funcName)s (%(levelname)s) (pid: {}); %(message)s'.format(
-                os.getpid()
-            )
+            f'%(asctime)s ; %(name)s.%(funcName)s (%(levelname)s) (pid: {os.getpid()}); %(message)s'
         )
     )
     stdouthandler.setLevel(logging.DEBUG)
@@ -66,7 +63,7 @@ def init_logging():
     logging.getLogger('aiohttp').addHandler(loghandler)
 
     if not DEBUG:
-        logsendhandler = RLogSenderHandler('aw', '{} {}'.format(getfqdn(), os.getpid()))
+        logsendhandler = RLogSenderHandler('aw', f'{getfqdn()} {os.getpid()}')
         logsendhandler.setFormatter(
             logging.Formatter(
                 '%(asctime)s ; %(name)s.%(funcName)s (%(levelname)s); %(message)s'
@@ -76,4 +73,4 @@ def init_logging():
         logger.addHandler(logsendhandler)
         logging.getLogger('rerobots_infra').addHandler(logsendhandler)
 
-    logger.info('this is version {}'.format(__version__))
+    logger.info(f'this is version {__version__}')

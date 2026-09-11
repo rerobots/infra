@@ -3,8 +3,8 @@ SCL <scott@rerobots>
 Copyright (C) 2019 rerobots, Inc.
 """
 
-from io import StringIO
 import sys
+from io import StringIO
 
 from rerobots_apiw import __version__
 from rerobots_apiw.__main__ import main_cli

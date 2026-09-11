@@ -6,14 +6,13 @@ import os
 import tempfile
 
 import aiohttp
-from aiohttp import web
 import jwt
+from aiohttp import web
 
 from .. import db as rrdb
 from ..requestproc import process_headers
-from ..util import create_subprocess_exec
 from ..settings import WEBUI_PUBLIC_KEY
-
+from ..util import create_subprocess_exec
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +28,7 @@ async def addon_drive_start_job(user, instance_id, token):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:drive'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
                 )
                 .one_or_none()
             )
@@ -49,9 +47,7 @@ async def addon_drive_start_job(user, instance_id, token):
             port = instance.listening_port
 
         if instance_status == 'READY' and len(ipv4) > 0:
-            logger.info(
-                'instance READY with IPv4 addr {} and port {}'.format(ipv4, port)
-            )
+            logger.info(f'instance READY with IPv4 addr {ipv4} and port {port}')
             break
         await asyncio.sleep(1)
 
@@ -88,7 +84,7 @@ async def addon_drive_start_job(user, instance_id, token):
         '{}@{}:~/'.format(addon_config['user'], ipv4),
     ]
     for scp_cmd in [scp_token_cmd, scp_up_cmd]:
-        logger.info('exec: {}'.format(scp_cmd))
+        logger.info(f'exec: {scp_cmd}')
         scp_p = await create_subprocess_exec(*scp_cmd)
         rc = await scp_p.wait()
         if rc != 0:
@@ -102,8 +98,7 @@ async def addon_drive_start_job(user, instance_id, token):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:drive'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
             )
             .one()
         )
@@ -128,7 +123,7 @@ async def addon_drive_start_job(user, instance_id, token):
         instance_id,
         'jwt.txt',
     ]
-    logger.info('exec: {}'.format(drivesend_cmd))
+    logger.info(f'exec: {drivesend_cmd}')
     drivesend_p = await create_subprocess_exec(*drivesend_cmd)
     rc = await drivesend_p.wait()
     if rc != 0:
@@ -146,8 +141,7 @@ async def addon_drive_stop_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:drive'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
             )
             .one()
         )
@@ -190,7 +184,7 @@ async def addon_drive_stop_job(user, instance_id):
             '-f',
             'drivesend.py',
         ]
-        logger.info('exec: {}'.format(kill_cmd))
+        logger.info(f'exec: {kill_cmd}')
         kill_p = await create_subprocess_exec(*kill_cmd)
         rc = await kill_p.wait()
         os.unlink(privatekey_path)
@@ -204,8 +198,7 @@ async def addon_drive_stop_job(user, instance_id):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:drive'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
             )
             .one()
         )
@@ -284,7 +277,7 @@ async def apply_addon_drive(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:drive'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
         )
     )
     if query.count() > 0:
@@ -296,7 +289,7 @@ async def apply_addon_drive(request):
         'status': 'starting',  # status \in {active, starting, stopping}
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:drive'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:drive',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -352,7 +345,7 @@ async def status_addon_drive(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:drive'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
         )
     )
     row = query.one_or_none()
@@ -415,7 +408,7 @@ async def remove_addon_drive(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:drive'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
         )
     )
 
@@ -438,7 +431,7 @@ async def remove_addon_drive(request):
 
 
 async def drive_sender_job(red, instance_id, ws_send):
-    handle = 'drive:{}'.format(instance_id)
+    handle = f'drive:{instance_id}'
     try:
         while True:
             await asyncio.sleep(0.1)
@@ -446,7 +439,7 @@ async def drive_sender_job(red, instance_id, ws_send):
             if x:
                 red.delete(handle)
                 await ws_send(json.loads(x))
-                logger.info('sent: {}'.format(x))
+                logger.info(f'sent: {x}')
     except asyncio.CancelledError:
         pass
 
@@ -497,7 +490,7 @@ async def drive_rx_commands(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == payload['sub'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:drive'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
         )
     )
     row = query.one_or_none()
@@ -536,9 +529,10 @@ async def drive_rx_commands(request):
             if msg.type == aiohttp.WSMsgType.TEXT:
                 # TODO
                 print(msg.data)
-            elif msg.type == aiohttp.WSMsgType.CLOSED:
-                break
-            elif msg.type == aiohttp.WSMsgType.ERROR:
+            elif (
+                msg.type == aiohttp.WSMsgType.CLOSED
+                or msg.type == aiohttp.WSMsgType.ERROR
+            ):
                 break
     except asyncio.CancelledError:
         pass
@@ -587,7 +581,7 @@ async def drive_send_command(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:drive'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:drive',
         )
     )
     row = query.one_or_none()
@@ -617,5 +611,5 @@ async def drive_send_command(request):
         given = await request.json()
     else:
         given = dict()
-    request.app['red'].set('drive:{}'.format(instance_id), json.dumps(given))
+    request.app['red'].set(f'drive:{instance_id}', json.dumps(given))
     return web.json_response({'success': True})

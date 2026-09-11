@@ -3,7 +3,6 @@ SCL <scott@rerobots>
 Copyright (C) 2019 rerobots, Inc.
 """
 
-import copy
 import json
 
 import pytest
@@ -13,7 +12,6 @@ from fixtures import client, wdconfig
 import rerobots_apiw.db as rrdb
 from rerobots_apiw import tasks
 from rerobots_apiw.util import now
-
 
 pytestmark = pytest.mark.filterwarnings(
     "ignore: Using or importing the ABCs from 'collections'"

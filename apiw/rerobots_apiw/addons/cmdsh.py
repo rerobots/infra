@@ -14,20 +14,16 @@ import asyncio
 import base64
 import json
 import logging
-import os
-import tempfile
 import uuid
 
 import aiohttp
-from aiohttp import web
 import redis
+from aiohttp import web
 
-from .tasks import start_cmdsh
 from .. import db as rrdb
-from ..util import create_subprocess_exec
-from ..requestproc import process_headers
 from .. import settings
-
+from ..requestproc import process_headers
+from .tasks import start_cmdsh
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +100,7 @@ async def apply_addon(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -153,7 +147,7 @@ async def apply_addon(request):
         'hstatus': {host_id: initial_status},
     }
     active_addon = rrdb.ActiveAddon(
-        instanceid_with_addon='{}:cmdsh'.format(instance_id),
+        instanceid_with_addon=f'{instance_id}:cmdsh',
         user=data['user'],
         config=json.dumps(config),
     )
@@ -216,9 +210,7 @@ async def get_status(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -226,9 +218,7 @@ async def get_status(request):
     if row is None:
         return web.json_response(
             {
-                'error_message': 'add-on `cmdsh` not active on host {} of this instance'.format(
-                    host_id
-                )
+                'error_message': f'add-on `cmdsh` not active on host {host_id} of this instance'
             },
             status=404,
             headers=data['response_headers'],
@@ -238,9 +228,7 @@ async def get_status(request):
     if host_id not in addon_config['hosts']:
         return web.json_response(
             {
-                'error_message': 'add-on `cmdsh` not active on host {} of this instance'.format(
-                    host_id
-                )
+                'error_message': f'add-on `cmdsh` not active on host {host_id} of this instance'
             },
             status=404,
             headers=data['response_headers'],
@@ -287,7 +275,7 @@ async def remove(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
         )
     )
 
@@ -341,7 +329,7 @@ async def forwarder(handle, ws_send):
 
     except Exception as err:
         # TODO: remove this in favor of Sentry capture?
-        logger.warning('caught {}: {}'.format(type(err), err))
+        logger.warning(f'caught {type(err)}: {err}')
 
 
 async def attach_sh(request):
@@ -377,7 +365,7 @@ async def attach_sh(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
         )
     )
     row = query.one_or_none()
@@ -419,7 +407,7 @@ async def attach_sh(request):
     ws = web.WebSocketResponse(autoping=True, heartbeat=5.0)
     await ws.prepare(request)
 
-    base_handle = 'addon:cmdsh:{}:{}:{}'.format(instance_id, host_id, sh_id)
+    base_handle = f'addon:cmdsh:{instance_id}:{host_id}:{sh_id}'
     stdout_handle = base_handle + ':stdout'
     stdin_handle = base_handle + ':stdin'
     sender = request.app.loop.create_task(forwarder(stdin_handle, ws.send_bytes))
@@ -468,7 +456,7 @@ async def newshell_starter(handle, ws_send):
 
     except Exception as err:
         # TODO: remove this in favor of Sentry capture?
-        logger.warning('caught {}: {}'.format(type(err), err))
+        logger.warning(f'caught {type(err)}: {err}')
 
 
 async def attach_main(request):
@@ -504,7 +492,7 @@ async def attach_main(request):
         .query(rrdb.ActiveAddon)
         .filter(
             rrdb.ActiveAddon.user == data['user'],
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id),
+            rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
         )
     )
     row = query.one_or_none()
@@ -541,7 +529,7 @@ async def attach_main(request):
     ws = web.WebSocketResponse(autoping=True, heartbeat=5.0)
     await ws.prepare(request)
 
-    handle = 'addon:cmdsh:{}:{}'.format(instance_id, host_id)
+    handle = f'addon:cmdsh:{instance_id}:{host_id}'
     sender = request.app.loop.create_task(newshell_starter(handle, ws.send_str))
     try:
         async for msg in ws:
@@ -636,9 +624,7 @@ async def newshell(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -680,9 +666,9 @@ async def newshell(request):
     await ws.prepare(request)
 
     sh_id = str(uuid.uuid4())
-    request.app['red'].rpush('addon:cmdsh:{}:{}'.format(instance_id, host_id), sh_id)
+    request.app['red'].rpush(f'addon:cmdsh:{instance_id}:{host_id}', sh_id)
 
-    base_handle = 'addon:cmdsh:{}:{}:{}'.format(instance_id, host_id, sh_id)
+    base_handle = f'addon:cmdsh:{instance_id}:{host_id}:{sh_id}'
     stdout_handle = base_handle + ':stdout'
     stdin_handle = base_handle + ':stdin'
     if settings.RUNTIME_ENVIRON in ['mock', 'staging-mock']:
@@ -720,8 +706,7 @@ async def stop_job(user, instance_id, host_id=None, eacommand=None):
             session.query(rrdb.ActiveAddon)
             .filter(
                 rrdb.ActiveAddon.user == user,
-                rrdb.ActiveAddon.instanceid_with_addon
-                == '{}:cmdsh'.format(instance_id),
+                rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
             )
             .one()
         )
@@ -744,17 +729,13 @@ async def stop_job(user, instance_id, host_id=None, eacommand=None):
 
     elif instance_status not in ['READY', 'TERMINATED']:
         logger.warning(
-            'instance {}, so cannot kill remote device-sharing client if it exists'.format(
-                instance_status
-            )
+            f'instance {instance_status}, so cannot kill remote device-sharing client if it exists'
         )
 
     elif instance_status == 'READY':
         if eacommand is None:
             logger.error(
-                'called on instance {} with eacommand None when status READY'.format(
-                    instance_id
-                )
+                f'called on instance {instance_id} with eacommand None when status READY'
             )
             return
 
@@ -792,9 +773,7 @@ async def stop_job(user, instance_id, host_id=None, eacommand=None):
             blob = red.get(msg_id)
             if blob is None or blob == b'NACK':
                 logger.warning(
-                    'no ACK of `EXEC INSIDE` {} from workspace deployment'.format(
-                        argv
-                    )
+                    f'no ACK of `EXEC INSIDE` {argv} from workspace deployment'
                 )
                 return
 
@@ -804,8 +783,7 @@ async def stop_job(user, instance_id, host_id=None, eacommand=None):
                 session.query(rrdb.ActiveAddon)
                 .filter(
                     rrdb.ActiveAddon.user == user,
-                    rrdb.ActiveAddon.instanceid_with_addon
-                    == '{}:cmdsh'.format(instance_id),
+                    rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh',
                 )
                 .one()
             )
@@ -854,9 +832,7 @@ async def send_file(request):
     query = (
         request['dbsession']
         .query(rrdb.ActiveAddon)
-        .filter(
-            rrdb.ActiveAddon.instanceid_with_addon == '{}:cmdsh'.format(instance_id)
-        )
+        .filter(rrdb.ActiveAddon.instanceid_with_addon == f'{instance_id}:cmdsh')
     )
     if 'in' not in data['payload']:
         query = query.filter(rrdb.ActiveAddon.user == data['user'])
@@ -917,9 +893,7 @@ async def send_file(request):
     blob = red.get(msg_id)
     if blob is None or blob == b'NACK':
         logger.warning(
-            'no ACK of `PUT FILE` from workspace deployment {}'.format(
-                instance.deploymentid
-            )
+            f'no ACK of `PUT FILE` from workspace deployment {instance.deploymentid}'
         )
         return
 
