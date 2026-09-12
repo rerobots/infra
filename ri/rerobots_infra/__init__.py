@@ -10,7 +10,6 @@ import logging
 from .chantempl import RerobotsChannel, RerobotsQChannel
 from .loggers import RLogSenderHandler
 
-
 __all__ = [
     'RLogSenderHandler',
     'RerobotsChannel',

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """logging tools, log handlers
 
 
@@ -6,10 +5,12 @@ SCL <scott@rerobots>
 Copyright (C) 2019 rerobots, Inc.
 """
 
-import logging
 import json
+import logging
 import socket
 import time
+
+logger = logging.getLogger(__name__)
 
 
 class RLogSenderHandler(logging.Handler):
@@ -26,7 +27,8 @@ class RLogSenderHandler(logging.Handler):
         if self._conn is not None:
             try:
                 self._conn.close()
-            except:
+            except Exception as err:
+                logger.warning(f'connection close failed: {err}; ignoring')
                 pass
         self._conn = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
@@ -44,11 +46,13 @@ class RLogSenderHandler(logging.Handler):
         rawbody = (body + '\n').encode()
         try:
             self._conn.sendto(rawbody, self._to)
-        except:
+        except Exception as err:
+            logger.warning(f'exception: {err}; retrying send')
             self.__reconnect()
             try:
                 self._conn.sendto(rawbody, self._to)
-            except:
+            except Exception as err:
+                logger.warning(f'exception: {err}; retrying send')
                 time.sleep(3)
                 self.__reconnect()
                 self._conn.sendto(rawbody, self._to)
