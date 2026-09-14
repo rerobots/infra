@@ -19,3 +19,5 @@ cd ..
 cd postgres
 $RUNC build -t rerobots/ext/postgres .
 cd ..
+
+$RUNC build -t rerobots/infra/base -f Dockerfile .
