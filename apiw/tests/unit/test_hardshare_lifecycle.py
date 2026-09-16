@@ -129,7 +129,7 @@ async def test_update(client, api_token, api_token_su):
     assert resp.status == 400
 
     payload['supported_addons'] = ['mistyproxy']
-    payload['addons_config'] = dict()
+    payload['addons_config'] = {}
     resp = await client.post(
         f'/hardshare/wd/{wdeployment_id}', json=payload, headers=headers
     )

@@ -24,8 +24,8 @@ async def get_billing(request):
     if not should_handle:
         return web.Response(status=403, headers=data['response_headers'])
 
-    acc = dict()
-    wdcache = dict()
+    acc = {}
+    wdcache = {}
     for instance in (
         request['dbsession']
         .query(rrdb.Instance)
@@ -56,7 +56,7 @@ async def get_billing(request):
 
     # e.g., {"acc": {"null": {"1": 75.059662}}}
     # TODO
-    return web.json_response(dict(), headers=data['response_headers'])
+    return web.json_response({}, headers=data['response_headers'])
 
 
 async def get_history(request):

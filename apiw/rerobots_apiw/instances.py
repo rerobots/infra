@@ -296,7 +296,7 @@ async def get_instance_info(request):
                 if row.status == 'READY' and row.ready_at is None:
                     row.ready_at = now()
 
-        payload['fwd'] = dict()
+        payload['fwd'] = {}
         if red.hexists('instance:' + row.instanceid, 'ipv4'):
             payload['fwd']['ipv4'] = str(
                 red.hget('instance:' + row.instanceid, 'ipv4'), encoding='utf-8'
@@ -366,7 +366,7 @@ async def request_instance(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
 
     wtype = None
     wdeployment_ids = []

@@ -958,7 +958,7 @@ async def apply_addon_cam(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
 
     # TODO:
     # if 'privkey' not in given:

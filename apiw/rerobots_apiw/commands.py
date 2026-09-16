@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """API worker
 
 Status codes of responses follow common practice and the HTTP/1.1
@@ -267,7 +266,7 @@ async def list_deployments(request):
 
     matches = []
     if with_info:
-        info = dict()
+        info = {}
     for row in query:
         if maxlen == 'u':
             matches.append(row.deploymentid)
@@ -476,7 +475,7 @@ def get_wdinfo(dbsession, wdeployment_id, username, is_superuser=False):
                 if row.addons_config:
                     wdinfo['addons_config'] = json.loads(row.addons_config)
                 else:
-                    wdinfo['addons_config'] = dict()
+                    wdinfo['addons_config'] = {}
     return wdinfo
 
 
@@ -581,7 +580,7 @@ async def change_firewall_rules(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
     instanceid = request.match_info['inid']
     if 'src' in given:
         if not isinstance(given['src'], str):
@@ -1183,7 +1182,7 @@ async def get_queue_lengths(request):
             {'error': msg}, status=400, headers=data['response_headers']
         )
 
-    feasible_wds = dict()
+    feasible_wds = {}
     for row in wds_query:
         if row.locked_out:
             continue

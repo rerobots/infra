@@ -43,7 +43,7 @@ async def apply_addon_vscode(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
 
     if 'user' in given:
         tunneling_user = given['user']

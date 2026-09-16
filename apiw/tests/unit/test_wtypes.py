@@ -32,7 +32,7 @@ async def test_anonymous_wtypes_list(client):
         'type': 'null',
         'wversion': 0,
         'supported_addons': [],
-        'addons_config': dict(),
+        'addons_config': {},
         'region': 'us:cali',
         'desc_yaml': '',
     }
@@ -50,7 +50,7 @@ async def test_anonymous_wtypes_nonduplicate(client):
         'type': 'null',
         'wversion': 0,
         'supported_addons': [],
-        'addons_config': dict(),
+        'addons_config': {},
         'region': 'us:cali',
         'desc_yaml': '',
     }

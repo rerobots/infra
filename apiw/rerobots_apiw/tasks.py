@@ -5,7 +5,6 @@ Copyright (C) 2018 rerobots, Inc.
 
 import asyncio
 import json
-import logging
 import os
 import random
 import subprocess

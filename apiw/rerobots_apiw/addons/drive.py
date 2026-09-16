@@ -223,7 +223,7 @@ async def apply_addon_drive(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
 
     # TODO:
     # if 'privkey' not in given:
@@ -610,6 +610,6 @@ async def drive_send_command(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
     request.app['red'].set(f'drive:{instance_id}', json.dumps(given))
     return web.json_response({'success': True})

@@ -45,11 +45,11 @@ class CommandChannel:
         else:
             self.loop = event_loop
         self.red = red
-        self.expected_resp = dict()
+        self.expected_resp = {}
         self.host = settings.AMQP_HOST
         self.port = settings.AMQP_PORT
         self._exchange_name = f'eacommand.{self.wdeployment_id}'
-        self.received_acks = dict()
+        self.received_acks = {}
         self.channel = None
         self._closing = False
         self._consumer = None
@@ -447,9 +447,9 @@ class ConnectionChannel:
         self.thportalq = None
         self.current_th = None
         self.thvpnq = asyncio.Queue()
-        self.expected_resp = dict()
+        self.expected_resp = {}
         self.channel = None
-        self.associate_tasks = dict()  # instance_id => task
+        self.associate_tasks = {}  # instance_id => task
         self._closing = False
         self._consumer = None
 

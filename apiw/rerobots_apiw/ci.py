@@ -35,7 +35,7 @@ async def post_ci_job(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
 
     if 'job_id' in request.match_info:
         job_id = request.match_info['job_id']
@@ -143,7 +143,7 @@ async def create_project(request):
     if request.can_read_body:
         given = await request.json()
     else:
-        given = dict()
+        given = {}
     if 'repo_url' not in given:
         return web.json_response(
             {'error_message': 'request is missing required parameter: repo_url'},
@@ -198,7 +198,7 @@ async def get_projects_list(request):
         )
     if not should_handle:
         return web.Response(status=403, headers=data['response_headers'])
-    projs = dict()
+    projs = {}
     for row in (
         request['dbsession']
         .query(rrdb.CIProject)

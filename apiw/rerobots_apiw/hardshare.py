@@ -42,7 +42,7 @@ async def status_cam(request):
 
     owner = data['user'] if data['org'] is None else data['org']
 
-    payload = dict()
+    payload = {}
     for wd in (
         request['dbsession']
         .query(rrdb.UserProvidedSupp)
@@ -990,7 +990,7 @@ async def advertise_wdeployment(request):
             {'error_message': 'busy'}, status=400, headers=data['response_headers']
         )
 
-    sshtun_tasks = dict()
+    sshtun_tasks = {}
     portaccess = None
     eacommand = None
     heartbeat_task = None
@@ -1395,7 +1395,7 @@ async def update_wdeployment(request):
         given = await request.json()
         assert 'supported_addons' in given
         if 'addons_config' not in given:
-            given['addons_config'] = dict()
+            given['addons_config'] = {}
         assert len(given) == 2
         for addon in given['supported_addons']:
             assert addon in ('cam', 'cmd', 'cmdsh', 'mistyproxy', 'py', 'java', 'vnc')

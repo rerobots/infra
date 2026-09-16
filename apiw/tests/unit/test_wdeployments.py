@@ -34,7 +34,7 @@ async def test_register_wd(client, wdconfig):
         'type': 'null',
         'wversion': 0,
         'supported_addons': [],
-        'addons_config': dict(),
+        'addons_config': {},
         'region': 'us:cali',
         'desc_yaml': '',
     }
