@@ -921,17 +921,14 @@ async def mark_event(request):
             headers=data['response_headers'],
         )
     if given['k'] == 'headMove':
-        if (
-            len(set(['ts', 'roll', 'pitch', 'yaw']).intersection(given['d'].keys()))
-            != 4
-        ):
+        if len({'ts', 'roll', 'pitch', 'yaw'}.intersection(given['d'].keys())) != 4:
             return web.json_response(
                 {'error_message': 'unexpected keys in event data'},
                 status=400,
                 headers=data['response_headers'],
             )
     elif given['k'] == 'goalReached':
-        if len(set(['ts', 'rule']).intersection(given['d'].keys())) != 2:
+        if len({'ts', 'rule'}.intersection(given['d'].keys())) != 2:
             return web.json_response(
                 {'error_message': 'unexpected keys in event data'},
                 status=400,
@@ -946,7 +943,7 @@ async def mark_event(request):
                 headers=data['response_headers'],
             )
     elif given['k'] == 'imageCap':
-        if len(set(['ts', 'img']).intersection(given['d'].keys())) != 2:
+        if len({'ts', 'img'}.intersection(given['d'].keys())) != 2:
             return web.json_response(
                 {'error_message': 'unexpected keys in event data'},
                 status=400,
@@ -962,11 +959,7 @@ async def mark_event(request):
             )
     elif given['k'] == 'baseMove':
         if (
-            len(
-                set(['ts', 'linear', 'angular', 'duration']).intersection(
-                    given['d'].keys()
-                )
-            )
+            len({'ts', 'linear', 'angular', 'duration'}.intersection(given['d'].keys()))
             != 4
         ):
             return web.json_response(
