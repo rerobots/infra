@@ -86,7 +86,7 @@ async def test_owners_list(client, hs_wdconfig, api_token_su):
     resp = await client.get('/hardshare/owners', headers=headers)
     assert resp.status == 200
     body = await resp.json()
-    assert set(body['owners']) == set(['bilbo', 'frodo'])
+    assert set(body['owners']) == {'bilbo', 'frodo'}
 
 
 async def test_register_wd(client, hs_wdconfig, api_token):
@@ -101,13 +101,13 @@ async def test_register_wd(client, hs_wdconfig, api_token):
     resp = await client.get('/deployment/' + hs_wdconfig['id'])
     assert resp.status == 200
     body = await resp.json()
-    assert set(body['supported_addons']) == set(['cmd', 'cmdsh'])
+    assert set(body['supported_addons']) == {'cmd', 'cmdsh'}
     assert 'addons_config' not in body
 
     resp = await client.get('/deployment/' + hs_wdconfig['id'], headers=headers)
     assert resp.status == 200
     body = await resp.json()
-    assert set(body['supported_addons']) == set(['cmd', 'cmdsh'])
+    assert set(body['supported_addons']) == {'cmd', 'cmdsh'}
     assert len(body['addons_config']) == 0
 
     resp = await client.get('/hardshare/list', headers=headers)
