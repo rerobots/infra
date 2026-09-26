@@ -41,7 +41,7 @@ logging.getLogger('rerobots_infra').addHandler(loghandler)
 
 def main_cli(argv=None):
     if argv is None:
-        argv = sys.argv
+        argv = sys.argv[1:]
     argparser = argparse.ArgumentParser(prog='rerobots_logger')
     argparser.add_argument(
         '-V', '--version', action='store_true', dest='print_version', default=False

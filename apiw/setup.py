@@ -37,7 +37,6 @@ __version__ = '{VERSION}'
 
 
 setup(
-    name='rerobots_apiw',
     version=VERSION,
     author_email='scott@rerobots',
     packages=[

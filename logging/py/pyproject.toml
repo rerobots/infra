@@ -1,13 +1,13 @@
 [build-system]
 requires = ["setuptools"]
-build-backend = "setuptools.build_meta:__legacy__"
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "rerobots_apiw"
+name = "rerobots_logger"
 dynamic = ["version"]
 
 [project.scripts]
-rerobots-apiw = "rerobots_apiw.__main__:main_cli"
+rerobots-logger = "rerobots_logger.__main__:main_cli"
 
 [tool.mypy]
 disable_error_code = ["import-untyped"]

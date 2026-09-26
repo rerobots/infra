@@ -37,7 +37,6 @@ __version__ = '{}'
 
 
 setup(
-    name='rerobots_infra',
     version=VERSION,
     author_email='scott@rerobots',
     packages=['rerobots_infra'],

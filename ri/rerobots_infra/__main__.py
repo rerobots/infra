@@ -42,7 +42,7 @@ class UEcho(socketserver.BaseRequestHandler):
 
 def main_cli(argv=None):
     if argv is None:
-        argv = sys.argv
+        argv = sys.argv[1:]
 
     if len(argv) != 1:
         sys.exit(1)

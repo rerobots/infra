@@ -17,7 +17,7 @@ from .tasks import do_periodic
 
 def main_cli(argv=None):
     if argv is None:
-        argv = sys.argv
+        argv = sys.argv[1:]
     argparser = argparse.ArgumentParser('apiw')
     argparser.add_argument(
         '--host',
