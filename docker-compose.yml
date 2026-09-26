@@ -9,7 +9,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - psql:/var/lib/postgresql/14/main
+      - psql:/var/lib/postgresql/16/main
 
   rabbitmq:
     image: rerobots/ext/rabbitmq
