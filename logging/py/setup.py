@@ -37,7 +37,6 @@ __version__ = '{VERSION}'
 
 
 setup(
-    name='rerobots_logger',
     version=VERSION,
     author_email='q@rerobots.net',
     packages=['rerobots_logger'],
