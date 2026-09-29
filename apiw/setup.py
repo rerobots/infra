@@ -42,7 +42,7 @@ setup(
     packages=[
         'rerobots_apiw',
         'rerobots_apiw.addons',
-        'rerobots_infra',
+        'rerobots_shared',
     ],
     install_requires=[
         'aiocache[redis]>=0.11,<0.12',

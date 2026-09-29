@@ -36,7 +36,7 @@ loghandler.setFormatter(
 )
 loghandler.setLevel(logging.DEBUG)
 logger.addHandler(loghandler)
-logging.getLogger('rerobots_infra').addHandler(loghandler)
+logging.getLogger('rerobots_shared').addHandler(loghandler)
 
 
 def main_cli(argv=None):

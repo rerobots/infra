@@ -3,11 +3,11 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rerobots_infra"
+name = "rerobots_shared"
 dynamic = ["version"]
 
 [project.scripts]
-log-echo = "rerobots_infra.__main__:main_cli"
+log-echo = "rerobots_shared.__main__:main_cli"
 
 [tool.mypy]
 disable_error_code = ["import-untyped"]

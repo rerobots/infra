@@ -19,9 +19,9 @@ from .util import now
 
 RerobotsChannel: Any  # TODO: narrow type
 if settings.DEBUG:
-    from rerobots_infra import RerobotsQChannel as RerobotsChannel
+    from rerobots_shared import RerobotsQChannel as RerobotsChannel
 else:
-    from rerobots_infra import RerobotsChannel
+    from rerobots_shared import RerobotsChannel
 
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-rerobots-infra = {editable = true, path = "."}
+rerobots-shared = {editable = true, path = "."}
 
 [dev-packages]
 pytest = "*"

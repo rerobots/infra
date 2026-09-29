@@ -7,7 +7,7 @@ import asyncio
 import functools
 import json
 
-from rerobots_infra import RerobotsQChannel
+from rerobots_shared import RerobotsQChannel
 
 
 async def test_start_cancel():

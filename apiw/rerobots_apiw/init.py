@@ -8,7 +8,7 @@ import logging.handlers
 import os
 from socket import getfqdn
 
-from rerobots_infra import RLogSenderHandler
+from rerobots_shared import RLogSenderHandler
 
 from . import __version__
 from .settings import DEBUG, SENTRY_DSN
@@ -59,7 +59,7 @@ def init_logging():
     )
     stdouthandler.setLevel(logging.DEBUG)
     logger.addHandler(stdouthandler)
-    logging.getLogger('rerobots_infra').addHandler(loghandler)
+    logging.getLogger('rerobots_shared').addHandler(loghandler)
     logging.getLogger('aiohttp').addHandler(loghandler)
 
     if not DEBUG:
@@ -71,6 +71,6 @@ def init_logging():
         )
         logsendhandler.setLevel(logging.INFO)
         logger.addHandler(logsendhandler)
-        logging.getLogger('rerobots_infra').addHandler(logsendhandler)
+        logging.getLogger('rerobots_shared').addHandler(logsendhandler)
 
     logger.info(f'this is version {__version__}')

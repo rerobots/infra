@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-logger = logging.getLogger('rerobots_infra')
+logger = logging.getLogger('rerobots_shared')
 logger.setLevel(logging.INFO)
 
 
