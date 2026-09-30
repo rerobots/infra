@@ -45,20 +45,6 @@ setup(
         'rerobots_shared',
     ],
     install_requires=[
-        'aiocache[redis]>=0.11,<0.12',
-        'aiocontextvars',
-        'aiohttp>=3.12,<3.13',
-        'aioredis<2',  # version 2 in production throws exception: AttributeError: module 'aioredis' has no attribute 'create_pool'
-        'celery',
-        'cryptography',
-        'geoip2',
-        'gunicorn>=20.1,<20.2',
-        'pika==1.2',
-        'psycopg[binary]',
-        'pyjwt>=2.12,<2.13',
-        'redis',
-        'requests>=2.32,<2.33',
-        'sentry-sdk>=1.5,<1.6',
-        'sqlalchemy>=2.0,<2.1',
+        # Defined in Pipfile
     ],
 )
